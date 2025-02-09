@@ -4,7 +4,7 @@ Proyecto final TCG Market: Creación de la API REST con Node.js / Express para p
 
 ## Descripción
 
-Se crea un proyecto de Node.js con Express, el cual permite gestionar usuarios y autenticación mediante JWT, soportando registro, inicio de sesión y obtención de datos del usuario autenticado.
+Se crea un proyecto de Node.js con Express, el cual permite gestionar usuarios y autenticación mediante JWT, soportando registro, inicio de sesión. Creación de cartas, comentarios y pedidos.
 
 ## Instalación
 
@@ -19,18 +19,11 @@ npm run dev
 
 [Contratos](./API-Contracts.md)
 
-## Configuración de entorno
+## Configuración variables de entorno
 
 Para ejecutar el proyecto correctamente, asegúrate de crear un archivo `.env` en la raíz del proyecto con el siguiente formato:
 
-```ini
-DB_USER=db_user
-DB_HOST=localhost
-DB_NAME=tcg_market
-DB_PASSWORD=password
-DB_PORT=5432
-JWT_SECRET=secret_key
-```
+[env.example](./.env.example)
 
 ## Tests
 
