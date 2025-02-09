@@ -15,6 +15,13 @@ npm install
 npm run dev
 ```
 
+## Creación de la base de datos
+
+Para crear la base de datos ejecutar los comandos del archivo `init.sql` en la base de datos PostgreSQL que esta en la ruta
+
+[Init.sql](./src/config/init.sql)
+
+
 ## Endpoints
 
 [Contratos](./API-Contracts.md)
