@@ -2,20 +2,22 @@ import { DB } from "../config/db.js"
 import format from "pg-format"
 
 export const cardModel = {
-  findAll: async () => {
+  findAll: async (limit = 10, offset = 0) => {
     try {
       const query = `
-        SELECT c.*, u.id as owner_id, u.name as owner_name
-        FROM Cards c
-        JOIN Users u ON c.owner_id = u.id
-      `
-      const { rows } = await DB.query(query)
-      return rows
+            SELECT c.*, u.id as owner_id, u.name as owner_name
+            FROM Cards c
+            JOIN Users u ON c.owner_id = u.id
+            LIMIT $1 OFFSET $2
+        `;
+      const { rows } = await DB.query(query, [limit, offset]);
+      return rows;
     } catch (error) {
-      console.error("Error al obtener las cartas:", error)
-      throw error
+      console.error("Error al obtener las cartas:", error);
+      throw error;
     }
   },
+
 
   findById: async (id) => {
     try {

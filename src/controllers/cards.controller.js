@@ -2,12 +2,16 @@ import { cardModel } from "../models/card.model.js"
 
 export const getAllCards = async (req, res, next) => {
   try {
-    const cards = await cardModel.findAll()
+    const limit = parseInt(req.query.limit, 10) || 10
+    const offset = parseInt(req.query.offset, 10) || 0
+
+    const cards = await cardModel.findAll(limit, offset)
     res.json(cards)
   } catch (error) {
     next(error)
   }
 }
+
 
 export const getCardById = async (req, res, next) => {
   try {
