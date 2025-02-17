@@ -13,4 +13,13 @@ export const DB = new Pool({
   user: DB_USER,
   password: DB_PASS,
   database: DB_NAME,
+  ssl: { rejectUnauthorized: false }
 })
+
+DB.connect()
+  .then(() => {
+    console.log('Conectado a PostgreSQL en Render')
+  })
+  .catch((err) => {
+    console.error('Error conectando a la DB:', err)
+  })
