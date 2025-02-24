@@ -44,17 +44,6 @@ export const salesModel = {
     }
   },
 
-  findBySeller: async (seller_id) => {
-    try {
-      const query = format("SELECT * FROM Sales WHERE seller_id = %L ORDER BY created_at DESC", seller_id);
-      const { rows } = await DB.query(query);
-      return rows;
-    } catch (error) {
-      console.error("Error al obtener ventas del usuario:", error);
-      throw error;
-    }
-  },
-
   delete: async (sale_id, seller_id) => {
     try {
       const query = format("DELETE FROM Sales WHERE id = %L AND seller_id = %L RETURNING *", sale_id, seller_id);
@@ -115,5 +104,31 @@ export const salesModel = {
       throw error;
     }
   },
-  
+
+
+  findAllSalesBySeller: async (seller_id) => {
+    try {
+      const query = format("SELECT * FROM Sales WHERE seller_id = %L ORDER BY created_at DESC", seller_id);
+      const { rows } = await DB.query(query);
+      return rows;
+    } catch (error) {
+      console.error("Error al obtener ventas del usuario:", error);
+      throw error;
+    }
+  },
+
+  findActiveSalesByUser: async (seller_id) => {
+    try {
+      const query = format(
+        "SELECT * FROM Sales WHERE seller_id = %L AND status = 'available' ORDER BY created_at DESC",
+        seller_id
+      );
+      const { rows } = await DB.query(query);
+      return rows;
+    } catch (error) {
+      console.error("Error al obtener ventas activas del usuario:", error);
+      throw error;
+    }
+  },
+
 };

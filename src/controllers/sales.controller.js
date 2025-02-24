@@ -24,6 +24,24 @@ export const createSale = async (req, res, next) => {
   }
 };
 
+
+export const deleteSale = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const seller_id = req.user.id;
+
+    const deletedSale = await salesModel.delete(id, seller_id);
+
+    if (!deletedSale) {
+      return res.status(403).json({ message: "No tienes permiso para eliminar esta venta" });
+    }
+
+    res.json({ message: "Venta eliminada exitosamente" });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getAllSales = async (req, res, next) => {
   try {
     const limit = parseInt(req.query.limit, 10) || 10;
@@ -53,27 +71,21 @@ export const getSaleById = async (req, res, next) => {
 
 export const getMySales = async (req, res, next) => {
   try {
-    const userId = req.user.id
-    const sales = await salesModel.findByUserId(userId)
+    const userId = req.user.id;
+    const sales = await salesModel.findAllSalesBySeller(userId);
 
-    res.json(sales)
+    res.json(sales);
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
 
-export const deleteSale = async (req, res, next) => {
+export const getActiveSales = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const seller_id = req.user.id;
+    const userId = req.user.id;
+    const sales = await salesModel.findActiveSalesByUser(userId);
 
-    const deletedSale = await salesModel.delete(id, seller_id);
-
-    if (!deletedSale) {
-      return res.status(403).json({ message: "No tienes permiso para eliminar esta venta" });
-    }
-
-    res.json({ message: "Venta eliminada exitosamente" });
+    res.json(sales);
   } catch (error) {
     next(error);
   }
