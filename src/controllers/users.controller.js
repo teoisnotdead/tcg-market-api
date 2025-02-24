@@ -61,6 +61,7 @@ export const getProfile = async (req, res, next) => {
         res.json({
             name: user.name,
             email: user.email,
+            id: user.id,
         })
     } catch (error) {
         console.error("Error en el endpoint GET /me:", error)

@@ -24,7 +24,6 @@ export const createSale = async (req, res, next) => {
   }
 };
 
-
 export const deleteSale = async (req, res, next) => {
   try {
     const { id } = req.params;
