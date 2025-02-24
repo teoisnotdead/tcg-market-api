@@ -39,5 +39,31 @@ export const userModel = {
             console.error("Error al buscar usuario por ID:", error)
             throw error
         }
-    }
+    },
+
+    update: async (id, data) => {
+        try {
+            let updates = []
+            if (data.name) updates.push(format("name = %L", data.name))
+            if (data.email) updates.push(format("email = %L", data.email))
+            if (data.password) updates.push(format("password = %L", data.password))
+
+            if (updates.length === 0) {
+                throw new Error("No se proporcionaron datos para actualizar")
+            }
+
+            const query = format(
+                `UPDATE Users SET %s WHERE id = %L RETURNING id, name, email`,
+                updates.join(", "),
+                id
+            )
+
+            const { rows } = await DB.query(query)
+            return rows[0]
+        } catch (error) {
+            console.error("Error al actualizar usuario:", error)
+            throw error
+        }
+    },
+
 }

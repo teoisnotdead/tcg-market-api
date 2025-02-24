@@ -11,22 +11,21 @@ CREATE TABLE Users (
     updated_at TIMESTAMP DEFAULT now()
 );
 
-CREATE TABLE Cards (
+CREATE TABLE Sales (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    seller_id UUID REFERENCES Users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
     price DECIMAL(10, 2) NOT NULL,
     image_url VARCHAR(255),
-    owner_id UUID REFERENCES Users(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
+    status VARCHAR(20) DEFAULT 'available',
+    created_at TIMESTAMP DEFAULT now()
 );
-
-ALTER TABLE Cards ADD COLUMN name VARCHAR(255);
 
 CREATE TABLE Comments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    card_id UUID REFERENCES Cards(id) ON DELETE CASCADE,
+    sale_id UUID REFERENCES Sales(id) ON DELETE CASCADE,
     user_id UUID REFERENCES Users(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT now()
@@ -42,7 +41,14 @@ CREATE TABLE Orders (
 CREATE TABLE Order_Items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID REFERENCES Orders(id) ON DELETE CASCADE,
-    card_id UUID REFERENCES Cards(id) ON DELETE CASCADE,
+    sale_id UUID REFERENCES Sales(id) ON DELETE CASCADE,
     quantity INTEGER NOT NULL,
     price DECIMAL(10, 2) NOT NULL
+);
+
+CREATE TABLE Purchases (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES Users(id) ON DELETE CASCADE,
+    sale_id UUID REFERENCES Sales(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT now()
 );

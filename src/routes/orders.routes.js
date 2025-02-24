@@ -4,7 +4,7 @@ import { verifyToken } from "../middlewares/auth.middleware.js"
 
 const router = Router()
 
-router.post("/orders", verifyToken, createOrder)
-router.get("/orders", verifyToken, getUserOrders)
+router.post("/", verifyToken, createOrder)
+router.get("/", verifyToken, getUserOrders)
 
 export default router

@@ -1,11 +1,13 @@
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const { Pool } = require('pg')
+import { createRequire } from 'module'
+const require = createRequire(import.meta.url)
+const { Pool, types } = require('pg')
 import dotenv from 'dotenv'
 
-dotenv.config();
+dotenv.config()
 
 const { DB_HOST, DB_PORT, DB_USER, DB_PASS, DB_NAME } = process.env
+
+types.setTypeParser(types.builtins.NUMERIC, (value) => parseFloat(value))
 
 export const DB = new Pool({
   host: DB_HOST,
@@ -13,7 +15,7 @@ export const DB = new Pool({
   user: DB_USER,
   password: DB_PASS,
   database: DB_NAME,
-  ssl: { rejectUnauthorized: false }
+  // ssl: { rejectUnauthorized: false }
 })
 
 DB.connect()

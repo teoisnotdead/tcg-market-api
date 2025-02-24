@@ -1,9 +1,11 @@
 import express from "express"
 import cors from "cors"
 import authRoutes from "./routes/auth.routes.js"
-import cardRoutes from "./routes/cards.routes.js" 
+import userRoutes from "./routes/users.routes.js"
 import commentRoutes from "./routes/comments.routes.js"
 import orderRoutes from "./routes/orders.routes.js"
+import saleRoutes from "./routes/sales.routes.js"
+import purchaseRoutes from "./routes/purchases.routes.js"
 
 const app = express()
 
@@ -12,10 +14,12 @@ app.use(cors())
 app.use(express.json())
 
 // Routes
-app.use("/", authRoutes)
-app.use("/", cardRoutes)
-app.use("/", commentRoutes)
-app.use("/", orderRoutes)
+app.use("/auth", authRoutes)
+app.use("/users", userRoutes)
+app.use("/comments", commentRoutes)
+app.use("/orders", orderRoutes)
+app.use("/sales", saleRoutes)
+app.use("/purchases", purchaseRoutes)
 
 // Error handler
 app.use((err, req, res, next) => {

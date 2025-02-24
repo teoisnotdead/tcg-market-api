@@ -4,7 +4,7 @@ import { verifyToken } from "../middlewares/auth.middleware.js"
 
 const router = Router()
 
-router.post("/comments", verifyToken, createComment)
-router.get("/comments/:card_id", getCommentsByCard)
+router.post("/", verifyToken, createComment)
+router.get("/:card_id", getCommentsByCard)
 
 export default router
