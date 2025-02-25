@@ -35,7 +35,16 @@ export const salesModel = {
 
   findById: async (sale_id) => {
     try {
-      const query = format("SELECT * FROM Sales WHERE id = %L", sale_id);
+      const query = format(
+        `SELECT 
+          s.*, 
+          u.name AS seller_name 
+         FROM Sales s
+         JOIN Users u ON s.seller_id = u.id
+         WHERE s.id = %L`,
+        sale_id
+      );
+
       const { rows } = await DB.query(query);
       return rows[0] || null;
     } catch (error) {
