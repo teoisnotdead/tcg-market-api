@@ -15,7 +15,7 @@ export const DB = new Pool({
   user: DB_USER,
   password: DB_PASS,
   database: DB_NAME,
-  // ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false } // En local se comenta
 })
 
 DB.connect()
