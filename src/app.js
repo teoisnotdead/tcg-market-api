@@ -3,7 +3,6 @@ import cors from "cors"
 import authRoutes from "./routes/auth.routes.js"
 import userRoutes from "./routes/users.routes.js"
 import commentRoutes from "./routes/comments.routes.js"
-import orderRoutes from "./routes/orders.routes.js"
 import saleRoutes from "./routes/sales.routes.js"
 import purchaseRoutes from "./routes/purchases.routes.js"
 
@@ -17,7 +16,6 @@ app.use(express.json())
 app.use("/auth", authRoutes)
 app.use("/users", userRoutes)
 app.use("/comments", commentRoutes)
-app.use("/orders", orderRoutes)
 app.use("/sales", saleRoutes)
 app.use("/purchases", purchaseRoutes)
 

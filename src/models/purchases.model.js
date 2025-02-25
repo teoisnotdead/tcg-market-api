@@ -2,16 +2,21 @@ import { DB } from "../config/db.js";
 import format from "pg-format";
 
 export const purchasesModel = {
-  create: async ({ userId, sale_id, quantity }, client = DB) => {
+  create: async ({ user_id, sale_id, seller_id, name, description, price, image_url, quantity }) => {
     try {
       const query = format(
-        "INSERT INTO Purchases (user_id, sale_id, quantity) VALUES (%L, %L, %L) RETURNING *",
-        userId,
+        "INSERT INTO Purchases (id, user_id, sale_id, seller_id, name, description, price, image_url, quantity) VALUES (gen_random_uuid(), %L, %L, %L, %L, %L, %L, %L, %L) RETURNING *",
+        user_id,
         sale_id,
+        seller_id,
+        name,
+        description,
+        price,
+        image_url,
         quantity
       );
 
-      const { rows } = await client.query(query);
+      const { rows } = await DB.query(query);
       return rows[0];
     } catch (error) {
       console.error("Error al registrar la compra:", error);
@@ -19,49 +24,13 @@ export const purchasesModel = {
     }
   },
 
-  findByUserId: async (userId) => {
+  findAllByUser: async (user_id) => {
     try {
-      const query = format(
-        `SELECT p.*, 
-                s.name AS product_name, 
-                s.price, 
-                s.image_url,
-                p.quantity,
-                p.created_at
-         FROM Purchases p
-         JOIN Sales s ON p.sale_id = s.id
-         WHERE p.user_id = %L`,
-        userId
-      );
-
+      const query = format("SELECT * FROM Purchases WHERE user_id = %L ORDER BY created_at DESC", user_id);
       const { rows } = await DB.query(query);
       return rows;
     } catch (error) {
-      console.error("Error al obtener las compras del usuario:", error);
-      throw error;
-    }
-  },
-
-  findHistoryByUserId: async (userId) => {
-    try {
-      const query = format(
-        `SELECT p.*, 
-                s.name AS product_name, 
-                s.price, 
-                s.image_url, 
-                p.quantity,
-                p.created_at 
-         FROM Purchases p
-         JOIN Sales s ON p.sale_id = s.id
-         WHERE p.user_id = %L
-         ORDER BY p.created_at DESC`,
-        userId
-      );
-
-      const { rows } = await DB.query(query);
-      return rows;
-    } catch (error) {
-      console.error("Error al obtener el historial de compras:", error);
+      console.error("Error al obtener compras del usuario:", error);
       throw error;
     }
   },
@@ -70,11 +39,10 @@ export const purchasesModel = {
     try {
       const query = format(
         `SELECT 
-            COUNT(p.id) AS total_purchases, 
-            COALESCE(SUM(s.price), 0) AS total_spent
-         FROM Purchases p
-         JOIN Sales s ON p.sale_id = s.id
-         WHERE p.user_id = %L`,
+              COUNT(p.id) AS total_purchases, 
+              COALESCE(SUM(p.price * p.quantity), 0) AS total_spent
+           FROM Purchases p
+           WHERE p.user_id = %L`,
         userId
       );
 
@@ -85,4 +53,7 @@ export const purchasesModel = {
       throw error;
     }
   }
+
 };
+
+

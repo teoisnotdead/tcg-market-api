@@ -24,7 +24,11 @@ export const salesModel = {
 
   findAll: async (limit = 10, offset = 0) => {
     try {
-      const query = format("SELECT * FROM Sales ORDER BY created_at DESC LIMIT %L OFFSET %L", limit, offset);
+      const query = format(
+        "SELECT * FROM Sales WHERE status = 'available' ORDER BY created_at DESC LIMIT %L OFFSET %L",
+        limit,
+        offset
+      );
       const { rows } = await DB.query(query);
       return rows;
     } catch (error) {

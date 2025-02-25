@@ -1,4 +1,5 @@
 import { salesModel } from "../models/sales.model.js";
+import { purchasesModel } from "../models/purchases.model.js";
 
 export const createSale = async (req, res, next) => {
   try {
@@ -89,3 +90,54 @@ export const getActiveSales = async (req, res, next) => {
     next(error);
   }
 };
+
+export const checkoutSale = async (req, res, next) => {
+  try {
+    const user_id = req.user.id; // Comprador
+    const { sale_id, quantity } = req.body;
+
+    if (!sale_id || !quantity) {
+      return res.status(400).json({ message: "Faltan datos para completar la compra" });
+    }
+
+    // Buscar la venta
+    const sale = await salesModel.findById(sale_id);
+
+    if (!sale) {
+      return res.status(404).json({ message: "Producto no encontrado" });
+    }
+
+    if (sale.quantity < quantity) {
+      return res.status(400).json({ message: "Stock insuficiente" });
+    }
+
+    // Reducir stock
+    const remainingQuantity = sale.quantity - quantity;
+
+    if (remainingQuantity > 0) {
+      await salesModel.updateQuantity(sale_id, remainingQuantity);
+    } else {
+      // ✅ Si no queda stock, actualizar status a 'sold' y poner quantity en 0
+      await salesModel.updateQuantity(sale_id, 0);
+      await salesModel.updateStatus(sale_id, "sold");
+    }
+
+    // Registrar la compra en Purchases
+    const purchase = await purchasesModel.create({
+      user_id,
+      sale_id,
+      seller_id: sale.seller_id,
+      name: sale.name,
+      description: sale.description,
+      price: sale.price,
+      image_url: sale.image_url,
+      quantity
+    });
+
+    res.status(201).json({ message: "Compra realizada con éxito", purchase });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
