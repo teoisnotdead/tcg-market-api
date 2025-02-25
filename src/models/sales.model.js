@@ -37,6 +37,17 @@ export const salesModel = {
     }
   },
 
+  countAll: async () => {
+    try {
+      const query = "SELECT COUNT(*) FROM Sales WHERE status = 'available'";
+      const { rows } = await DB.query(query);
+      return parseInt(rows[0].count, 10);
+    } catch (error) {
+      console.error("Error al obtener el total de ventas:", error);
+      throw error;
+    }
+  },
+
   findById: async (sale_id) => {
     try {
       const query = format(
@@ -130,18 +141,34 @@ export const salesModel = {
     }
   },
 
-  findActiveSalesByUser: async (seller_id) => {
+  findActiveSalesByUser: async (seller_id, limit = 10, offset = 0) => {
     try {
       const query = format(
-        "SELECT * FROM Sales WHERE seller_id = %L AND status = 'available' ORDER BY created_at DESC",
+        `SELECT * FROM Sales 
+        WHERE seller_id = %L AND status = 'available' 
+        ORDER BY created_at DESC
+        LIMIT %L OFFSET %L`,
+        seller_id,
+        limit,
+        offset
+      );
+
+      const { rows } = await DB.query(query);
+
+      const countQuery = format(
+        `SELECT COUNT(*) FROM Sales WHERE seller_id = %L AND status = 'available'`,
         seller_id
       );
-      const { rows } = await DB.query(query);
-      return rows;
+
+      const countResult = await DB.query(countQuery);
+      const totalSales = parseInt(countResult.rows[0].count, 10); // Total de ventas activas
+
+      return { sales: rows, totalSales }; // Retorna ventas y total de ventas
     } catch (error) {
       console.error("Error al obtener ventas activas del usuario:", error);
       throw error;
     }
   },
+
 
 };

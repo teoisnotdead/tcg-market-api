@@ -48,11 +48,23 @@ export const getAllSales = async (req, res, next) => {
     const offset = parseInt(req.query.offset, 10) || 0;
 
     const sales = await salesModel.findAll(limit, offset);
-    res.json(sales);
+
+    const totalSales = await salesModel.countAll();
+
+    const totalPages = Math.ceil(totalSales / limit);
+
+    res.json({
+      currentPage: Math.floor(offset / limit) + 1,
+      totalPages,
+      totalItems: totalSales,
+      itemsPerPage: limit,
+      data: sales,
+    });
   } catch (error) {
     next(error);
   }
 };
+
 
 export const getSaleById = async (req, res, next) => {
   try {
@@ -83,9 +95,20 @@ export const getMySales = async (req, res, next) => {
 export const getActiveSales = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const sales = await salesModel.findActiveSalesByUser(userId);
+    const limit = parseInt(req.query.limit, 10) || 10; // Establecer el límite por defecto en 10
+    const offset = parseInt(req.query.offset, 10) || 0; // Establecer el offset por defecto en 0
 
-    res.json(sales);
+    // Obtener las ventas activas del usuario con limit y offset
+    const { sales, totalSales } = await salesModel.findActiveSalesByUser(userId, limit, offset);
+
+    // Responder con los datos necesarios para la paginación
+    res.json({
+      totalItems: totalSales, // Total de elementos disponibles
+      itemsPerPage: limit,    // Elementos por página
+      totalPages: Math.ceil(totalSales / limit), // Total de páginas
+      currentPage: Math.ceil(offset / limit) + 1, // Página actual
+      data: sales,
+    });
   } catch (error) {
     next(error);
   }
