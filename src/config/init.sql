@@ -52,3 +52,10 @@ CREATE TABLE Purchases (
     sale_id UUID REFERENCES Sales(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT now()
 );
+
+DROP TABLE IF EXISTS "Users";
+DROP TABLE IF EXISTS "Sales";
+DROP TABLE IF EXISTS "Comments";
+DROP TABLE IF EXISTS "Orders";
+DROP TABLE IF EXISTS "Order_Items";
+DROP TABLE IF EXISTS "Purchases";

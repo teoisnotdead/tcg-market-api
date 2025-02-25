@@ -43,6 +43,8 @@ npm test
 ## Futuras funcionalidades
 
 - Sistema de notificaciones
+- Sistema de subastas
+- Sistema de subida de imagenes
 - Fecha al historial de ventas
 - Sistema de pagos
   - Sistema de pagos con Stripe
