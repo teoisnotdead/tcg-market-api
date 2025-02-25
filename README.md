@@ -39,3 +39,12 @@ Para ejecutar los tests, ejecuta los siguientes comandos:
 ```bash
 npm test
 ```
+
+## Futuras funcionalidades
+
+- Sistema de notificaciones
+- Fecha al historial de ventas
+- Sistema de pagos
+  - Sistema de pagos con Stripe
+  - Sistema de pagos con Mercado Pago
+  - Sistema de pagos con PayPal
