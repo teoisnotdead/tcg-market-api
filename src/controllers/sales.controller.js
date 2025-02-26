@@ -75,7 +75,7 @@ export const getSaleById = async (req, res, next) => {
       return res.status(404).json({ message: "Venta no encontrada" });
     }
 
-    res.json(sale);
+    res.json({...sale, seller_id: sale.seller_id});
   } catch (error) {
     next(error);
   }
@@ -95,18 +95,18 @@ export const getMySales = async (req, res, next) => {
 export const getActiveSales = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const limit = parseInt(req.query.limit, 10) || 10; // Establecer el límite por defecto en 10
-    const offset = parseInt(req.query.offset, 10) || 0; // Establecer el offset por defecto en 0
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = parseInt(req.query.offset, 10) || 0;
 
-    // Obtener las ventas activas del usuario con limit y offset
+
     const { sales, totalSales } = await salesModel.findActiveSalesByUser(userId, limit, offset);
 
-    // Responder con los datos necesarios para la paginación
+
     res.json({
-      totalItems: totalSales, // Total de elementos disponibles
-      itemsPerPage: limit,    // Elementos por página
-      totalPages: Math.ceil(totalSales / limit), // Total de páginas
-      currentPage: Math.ceil(offset / limit) + 1, // Página actual
+      totalItems: totalSales,
+      itemsPerPage: limit,
+      totalPages: Math.ceil(totalSales / limit),
+      currentPage: Math.ceil(offset / limit) + 1,
       data: sales,
     });
   } catch (error) {
@@ -116,7 +116,7 @@ export const getActiveSales = async (req, res, next) => {
 
 export const checkoutSale = async (req, res, next) => {
   try {
-    const user_id = req.user.id; // Comprador
+    const user_id = req.user.id;
     const { sale_id, quantity } = req.body;
 
     if (!sale_id || !quantity) {
@@ -134,18 +134,16 @@ export const checkoutSale = async (req, res, next) => {
       return res.status(400).json({ message: "Stock insuficiente" });
     }
 
-    // Reducir stock
+
     const remainingQuantity = sale.quantity - quantity;
 
     if (remainingQuantity > 0) {
       await salesModel.updateQuantity(sale_id, remainingQuantity);
     } else {
-      // ✅ Si no queda stock, actualizar status a 'sold' y poner quantity en 0
       await salesModel.updateQuantity(sale_id, 0);
       await salesModel.updateStatus(sale_id, "sold");
     }
 
-    // Registrar la compra en Purchases
     const purchase = await purchasesModel.create({
       user_id,
       sale_id,
@@ -163,4 +161,32 @@ export const checkoutSale = async (req, res, next) => {
   }
 };
 
+export const updateSale = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const seller_id = req.user.id;
+
+    const { name, description, price, image_url, quantity } = req.body;
+
+    if (!name || !description || !price || !quantity) {
+      return res.status(400).json({ message: "Todos los campos son obligatorios" });
+    }
+
+    const updatedSale = await salesModel.update(id, seller_id, {
+      name,
+      description,
+      price,
+      image_url,
+      quantity,
+    });
+
+    if (!updatedSale) {
+      return res.status(403).json({ message: "No tienes permiso para modificar esta venta" });
+    }
+
+    res.json({ message: "Venta modificada exitosamente", sale: updatedSale });
+  } catch (error) {
+    next(error);
+  }
+};
 

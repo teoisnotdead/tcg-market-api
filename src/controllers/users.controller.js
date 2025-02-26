@@ -42,6 +42,7 @@ export const loginUser = async (req, res, next) => {
             token,
             name: user.name,
             email: user.email,
+            userId: user.id,
         })
     } catch (error) {
         console.error("Error en el inicio de sesión:", error)
@@ -86,14 +87,18 @@ export const getProfileStats = async (req, res, next) => {
         const user_id = req.user.id;
 
         // Obtener estadísticas de ventas y compras
-        const salesStats = await salesModel.getStatsByUser(user_id);
-        const purchasesStats = await purchasesModel.getStatsByUser(user_id);
+        const activeSalesCount = await salesModel.getActiveSalesCountByUser(user_id);
+        const salesStats = await purchasesModel.getSalesStatsByUser(user_id);
+        const purchasesStats = await purchasesModel.getPurchasesStatsByUser(user_id);
+        console.log('actiactiveSalesCountve', activeSalesCount);
+        console.log('salesStats', salesStats)
+        console.log('purchasesStats', purchasesStats)
 
         // Construimos la respuesta final
         res.json({
             sales: {
-                active: parseInt(salesStats.active_sales) || 0,
-                sold: parseInt(salesStats.sold_sales) || 0,
+                active: parseInt(activeSalesCount.active_sales) || 0,
+                sold: parseInt(salesStats.total_sales) || 0,
                 total_earned: parseFloat(salesStats.total_earned) || 0
             },
             purchases: {

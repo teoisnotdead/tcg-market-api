@@ -35,24 +35,43 @@ export const purchasesModel = {
     }
   },
 
-  getStatsByUser: async (userId) => {
+  getSalesStatsByUser: async (user_id) => {
     try {
       const query = format(
         `SELECT 
-              COUNT(p.id) AS total_purchases, 
-              COALESCE(SUM(p.price * p.quantity), 0) AS total_spent
-           FROM Purchases p
-           WHERE p.user_id = %L`,
-        userId
+            COUNT(*) AS total_sales,
+            COALESCE(SUM(price * quantity), 0) AS total_earned
+         FROM Purchases
+         WHERE seller_id = %L`,
+        user_id
       );
 
       const { rows } = await DB.query(query);
-      return rows[0] || { total_purchases: 0, total_spent: 0 };
+      return rows[0];
     } catch (error) {
-      console.error("Error al obtener estadísticas de compras:", error);
+      console.error("Error al obtener estadísticas de ventas realizadas:", error);
       throw error;
     }
-  }
+  },
+
+  getPurchasesStatsByUser: async (user_id) => {
+    try {
+      const query = format(
+        `SELECT 
+            COUNT(*) AS total_purchases,
+            COALESCE(SUM(price * quantity), 0) AS total_spent
+         FROM Purchases
+         WHERE user_id = %L`,
+        user_id
+      );
+
+      const { rows } = await DB.query(query);
+      return rows[0];
+    } catch (error) {
+      console.error("Error al obtener estadísticas de compras realizadas:", error);
+      throw error;
+    }
+  },
 
 };
 

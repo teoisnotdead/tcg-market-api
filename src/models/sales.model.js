@@ -109,30 +109,16 @@ export const salesModel = {
     }
   },
 
-  getStatsByUser: async (user_id) => {
-    try {
-      const query = format(
-        `SELECT 
-            COUNT(*) FILTER (WHERE status = 'available') AS active_sales,
-            COUNT(*) FILTER (WHERE status = 'sold') AS sold_sales,
-            COALESCE(SUM(price * quantity) FILTER (WHERE status = 'sold'), 0) AS total_earned
-        FROM Sales
-        WHERE seller_id = %L`,
-        user_id
-      );
-
-      const { rows } = await DB.query(query);
-      return rows[0];
-    } catch (error) {
-      console.error("Error al obtener estadísticas de ventas:", error);
-      throw error;
-    }
-  },
-
-
   findAllSalesBySeller: async (seller_id) => {
     try {
-      const query = format("SELECT * FROM Sales WHERE seller_id = %L ORDER BY created_at DESC", seller_id);
+      const query = format(`
+        SELECT s.*, p.sale_id 
+        FROM Sales s
+        LEFT JOIN Purchases p ON s.id = p.sale_id AND p.seller_id = %L
+        WHERE s.seller_id = %L 
+        ORDER BY s.created_at DESC
+      `, seller_id, seller_id);
+
       const { rows } = await DB.query(query);
       return rows;
     } catch (error) {
@@ -140,6 +126,7 @@ export const salesModel = {
       throw error;
     }
   },
+
 
   findActiveSalesByUser: async (seller_id, limit = 10, offset = 0) => {
     try {
@@ -170,5 +157,45 @@ export const salesModel = {
     }
   },
 
+  getActiveSalesCountByUser: async (seller_id) => {
+    try {
+      const query = format(
+        `SELECT COUNT(*) AS active_sales
+         FROM Sales
+         WHERE seller_id = %L AND status = 'available' AND quantity > 0`,
+        seller_id
+      );
+
+      const { rows } = await DB.query(query);
+      return rows[0];
+    } catch (error) {
+      console.error("Error al obtener ventas activas:", error);
+      throw error;
+    }
+  },
+
+
+  update: async (sale_id, seller_id, { name, description, price, image_url, quantity }) => {
+    try {
+      // Verificamos si la venta existe y si el vendedor es el propietario
+      const query = format(
+        "UPDATE Sales SET name = %L, description = %L, price = %L, image_url = %L, quantity = %L WHERE id = %L AND seller_id = %L RETURNING *",
+        name,
+        description,
+        price,
+        image_url,
+        quantity,
+        sale_id,
+        seller_id
+      );
+      const { rows } = await DB.query(query);
+
+      // Si no se encontró una venta que coincida con el seller_id, retornamos null
+      return rows[0] || null;
+    } catch (error) {
+      console.error("Error al actualizar la venta:", error);
+      throw error;
+    }
+  },
 
 };

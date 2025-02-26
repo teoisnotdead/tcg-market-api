@@ -7,6 +7,7 @@ import {
   getMySales,
   getActiveSales,
   checkoutSale,
+  updateSale,
 } from "../controllers/sales.controller.js";
 import { verifyToken } from "../middlewares/auth.middleware.js";
 
@@ -19,5 +20,6 @@ router.get("/all-sales", verifyToken, getMySales);
 router.delete("/:id", verifyToken, deleteSale);
 router.get("/:id", getSaleById);
 router.post("/checkout", verifyToken, checkoutSale)
+router.put("/:id", verifyToken, updateSale)
 
 export default router;
