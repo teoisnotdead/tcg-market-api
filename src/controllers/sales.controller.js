@@ -190,3 +190,27 @@ export const updateSale = async (req, res, next) => {
   }
 };
 
+export const searchSales = async (req, res, next) => {
+  try {
+    const { q } = req.query;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = parseInt(req.query.offset, 10) || 0;
+
+    if (!q) {
+      return res.status(400).json({ message: "El término de búsqueda es requerido" });
+    }
+
+    const { sales, totalItems } = await salesModel.searchSales(q, limit, offset);
+
+    res.json({
+      currentPage: Math.floor(offset / limit) + 1,
+      totalPages: Math.ceil(totalItems / limit),
+      totalItems,
+      itemsPerPage: limit,
+      data: sales,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

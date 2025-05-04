@@ -47,7 +47,7 @@ npm test
 - Sistema de subida de imagenes
 - Fecha al historial de ventas
 - Sistema de reputación
-- Sistema de favoritos
+- Sistema de favoritos/guardados
 - Sistema de pagos
   - Sistema de pagos con Stripe
   - Sistema de pagos con Mercado Pago

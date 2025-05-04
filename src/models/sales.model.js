@@ -198,4 +198,56 @@ export const salesModel = {
     }
   },
 
+  searchSales: async (searchTerm, limit = 10, offset = 0) => {
+    try {
+      const query = format(
+        `SELECT s.*, u.name AS seller_name 
+         FROM Sales s
+         JOIN Users u ON s.seller_id = u.id
+         WHERE s.status = 'available' 
+         AND (
+           s.name ILIKE %L OR 
+           s.description ILIKE %L OR 
+           u.name ILIKE %L
+         )
+         ORDER BY s.created_at DESC
+         LIMIT %L OFFSET %L`,
+        `%${searchTerm}%`,
+        `%${searchTerm}%`,
+        `%${searchTerm}%`,
+        limit,
+        offset
+      );
+
+      const countQuery = format(
+        `SELECT COUNT(*) 
+         FROM Sales s
+         JOIN Users u ON s.seller_id = u.id
+         WHERE s.status = 'available' 
+         AND (
+           s.name ILIKE %L OR 
+           s.description ILIKE %L OR 
+           u.name ILIKE %L
+         )`,
+        `%${searchTerm}%`,
+        `%${searchTerm}%`,
+        `%${searchTerm}%`
+      );
+
+      const [results, countResult] = await Promise.all([
+        DB.query(query),
+        DB.query(countQuery)
+      ]);
+
+      const totalItems = parseInt(countResult.rows[0].count, 10);
+
+      return {
+        sales: results.rows,
+        totalItems
+      };
+    } catch (error) {
+      console.error("Error al buscar ventas:", error);
+      throw error;
+    }
+  },
 };
