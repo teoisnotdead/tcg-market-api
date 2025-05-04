@@ -10,6 +10,10 @@ export const createSale = async (req, res, next) => {
       return res.status(400).json({ message: "Todos los campos son obligatorios" });
     }
 
+    if (description.length > 100) {
+      return res.status(400).json({ message: "La descripción no puede tener más de 100 caracteres" });
+    }
+
     const sale = await salesModel.create({
       seller_id,
       name,
@@ -170,6 +174,10 @@ export const updateSale = async (req, res, next) => {
 
     if (!name || !description || !price || !quantity) {
       return res.status(400).json({ message: "Todos los campos son obligatorios" });
+    }
+
+    if (description.length > 100) {
+      return res.status(400).json({ message: "La descripción no puede tener más de 100 caracteres" });
     }
 
     const updatedSale = await salesModel.update(id, seller_id, {

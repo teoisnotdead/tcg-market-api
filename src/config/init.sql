@@ -15,7 +15,7 @@ CREATE TABLE Sales (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     seller_id UUID REFERENCES Users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
+    description VARCHAR(100) NOT NULL,
     price DECIMAL(10, 2) NOT NULL,
     image_url VARCHAR(255),
     quantity INTEGER NOT NULL CHECK (quantity >= 0),
