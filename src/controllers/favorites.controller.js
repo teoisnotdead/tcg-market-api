@@ -30,8 +30,18 @@ export const removeFavorite = async (req, res, next) => {
 export const getUserFavorites = async (req, res, next) => {
   try {
     const user_id = req.user.id;
-    const favorites = await favoritesModel.getUserFavorites(user_id);
-    res.json(favorites);
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = parseInt(req.query.offset, 10) || 0;
+
+    const { favorites, totalItems } = await favoritesModel.getUserFavorites(user_id, limit, offset);
+
+    res.json({
+      currentPage: Math.floor(offset / limit) + 1,
+      totalPages: Math.ceil(totalItems / limit),
+      totalItems,
+      itemsPerPage: limit,
+      data: favorites,
+    });
   } catch (error) {
     next(error);
   }
