@@ -20,9 +20,9 @@ CREATE TABLE Sales (
     image_url VARCHAR(255),
     quantity INTEGER NOT NULL CHECK (quantity >= 0),
     status VARCHAR(20) DEFAULT 'available',
+    views INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT now()
 );
-
 
 CREATE TABLE Comments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -45,7 +45,16 @@ CREATE TABLE Purchases (
     created_at TIMESTAMP DEFAULT now()
 );
 
+CREATE TABLE Favorites (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES Users(id) ON DELETE CASCADE,
+    sale_id UUID REFERENCES Sales(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT now(),
+    UNIQUE(user_id, sale_id)
+);
+
 DROP TABLE IF EXISTS "Users";
 DROP TABLE IF EXISTS "Sales";
 DROP TABLE IF EXISTS "Comments";
 DROP TABLE IF EXISTS "Purchases";
+DROP TABLE IF EXISTS "Favorites";

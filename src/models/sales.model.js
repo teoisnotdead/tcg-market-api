@@ -198,6 +198,20 @@ export const salesModel = {
     }
   },
 
+  incrementViews: async (sale_id) => {
+    try {
+      const query = format(
+        "UPDATE Sales SET views = views + 1 WHERE id = %L RETURNING views",
+        sale_id
+      );
+      const { rows } = await DB.query(query);
+      return rows[0];
+    } catch (error) {
+      console.error("Error al incrementar vistas:", error);
+      throw error;
+    }
+  },
+
   searchSales: async (searchTerm, limit = 10, offset = 0) => {
     try {
       const query = format(

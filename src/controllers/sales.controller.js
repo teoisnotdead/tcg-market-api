@@ -79,6 +79,9 @@ export const getSaleById = async (req, res, next) => {
       return res.status(404).json({ message: "Venta no encontrada" });
     }
 
+    // Incrementar el contador de vistas
+    await salesModel.incrementViews(id);
+
     res.json({...sale, seller_id: sale.seller_id});
   } catch (error) {
     next(error);

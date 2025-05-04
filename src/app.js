@@ -5,6 +5,7 @@ import userRoutes from "./routes/users.routes.js"
 import commentRoutes from "./routes/comments.routes.js"
 import saleRoutes from "./routes/sales.routes.js"
 import purchaseRoutes from "./routes/purchases.routes.js"
+import favoriteRoutes from "./routes/favorites.routes.js"
 
 const app = express()
 
@@ -18,6 +19,7 @@ app.use("/users", userRoutes)
 app.use("/comments", commentRoutes)
 app.use("/sales", saleRoutes)
 app.use("/purchases", purchaseRoutes)
+app.use("/favorites", favoriteRoutes)
 
 // Error handler
 app.use((err, req, res, next) => {
