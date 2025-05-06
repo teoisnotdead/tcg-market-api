@@ -52,18 +52,21 @@ export const deleteSale = async (req, res, next) => {
 
 export const getAllSales = async (req, res) => {
   try {
-    const { page = 1, limit = 10, categories } = req.query;
-    const offset = (page - 1) * limit;
+    const { page = 1, limit = 10, offset: offsetParam, categories } = req.query;
+    
+    // Si se proporciona offset directamente, usarlo; sino, calcularlo desde page
+    const offset = offsetParam !== undefined ? parseInt(offsetParam, 10) : (parseInt(page, 10) - 1) * parseInt(limit, 10);
+    const limitInt = parseInt(limit, 10);
 
     const [sales, total] = await Promise.all([
-      salesModel.findAll(limit, offset, categories),
+      salesModel.findAll(limitInt, offset, categories),
       salesModel.countAll(categories)
     ]);
 
     res.json({
       sales,
-      totalPages: Math.ceil(total / limit),
-      currentPage: parseInt(page),
+      totalPages: Math.ceil(total / limitInt),
+      currentPage: offsetParam !== undefined ? Math.floor(offset / limitInt) + 1 : parseInt(page, 10),
       total
     });
   } catch (error) {
@@ -207,19 +210,22 @@ export const updateSale = async (req, res) => {
 
 export const searchSales = async (req, res) => {
   try {
-    const { search, page = 1, limit = 10, categories } = req.query;
-    const offset = (page - 1) * limit;
+    const { search, page = 1, limit = 10, offset: offsetParam, categories } = req.query;
+    
+    // Si se proporciona offset directamente, usarlo; sino, calcularlo desde page
+    const offset = offsetParam !== undefined ? parseInt(offsetParam, 10) : (parseInt(page, 10) - 1) * parseInt(limit, 10);
+    const limitInt = parseInt(limit, 10);
 
     if (!search) {
       return res.status(400).json({ message: "El término de búsqueda es requerido" });
     }
 
-    const { sales, total } = await salesModel.searchSales(search, limit, offset, categories);
+    const { sales, total } = await salesModel.searchSales(search, limitInt, offset, categories);
 
     res.json({
       sales,
-      totalPages: Math.ceil(total / limit),
-      currentPage: parseInt(page),
+      totalPages: Math.ceil(total / limitInt),
+      currentPage: offsetParam !== undefined ? Math.floor(offset / limitInt) + 1 : parseInt(page, 10),
       total
     });
   } catch (error) {
