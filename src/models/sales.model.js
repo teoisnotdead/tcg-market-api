@@ -4,7 +4,7 @@ import format from "pg-format";
 export const salesModel = {
   create: async ({ seller_id, name, description, price, image_url, quantity, category_id }) => {
     try {
-      const client = await DB.getClient();
+      const client = await DB.connect();
       try {
         await client.query('BEGIN');
         const query = format(
@@ -32,13 +32,14 @@ export const salesModel = {
     }
   },
 
-  findAll: async (limit = 10, offset = 0, categoryId = null) => {
+  findAll: async (limit = 10, offset = 0, categories = null) => {
     try {
       let query;
-      if (categoryId) {
+      if (categories) {
+        const ids = Array.isArray(categories) ? categories : categories.split(',');
         query = format(
-          "SELECT * FROM Sales WHERE status = 'available' AND category_id = %L ORDER BY created_at DESC LIMIT %L OFFSET %L",
-          categoryId,
+          "SELECT * FROM Sales WHERE status = 'available' AND category_id IN (%L) ORDER BY created_at DESC LIMIT %L OFFSET %L",
+          ids,
           limit,
           offset
         );
@@ -57,13 +58,14 @@ export const salesModel = {
     }
   },
 
-  countAll: async (categoryId = null) => {
+  countAll: async (categories = null) => {
     try {
       let query;
-      if (categoryId) {
+      if (categories) {
+        const ids = Array.isArray(categories) ? categories : categories.split(',');
         query = format(
-          "SELECT COUNT(*) FROM Sales WHERE status = 'available' AND category_id = %L",
-          categoryId
+          "SELECT COUNT(*) FROM Sales WHERE status = 'available' AND category_id IN (%L)",
+          ids
         );
       } else {
         query = "SELECT COUNT(*) FROM Sales WHERE status = 'available'";
@@ -256,7 +258,7 @@ export const salesModel = {
 
   update: async (sale_id, seller_id, { name, description, price, image_url, quantity, category_id }) => {
     try {
-      const client = await DB.getClient();
+      const client = await DB.connect();
       try {
         await client.query('BEGIN');
         const query = format(
@@ -299,19 +301,20 @@ export const salesModel = {
     }
   },
 
-  searchSales: async (searchTerm, limit = 10, offset = 0, categoryId = null) => {
+  searchSales: async (searchTerm, limit = 10, offset = 0, categories = null) => {
     try {
       let query;
       let countQuery;
 
-      if (categoryId) {
+      if (categories) {
+        const ids = Array.isArray(categories) ? categories : categories.split(',');
         query = format(
           `SELECT s.*, u.name AS seller_name, c.id as category_id, c.name as category_name, c.slug as category_slug
            FROM Sales s
            JOIN Users u ON s.seller_id = u.id
            LEFT JOIN Categories c ON s.category_id = c.id
            WHERE s.status = 'available' 
-           AND s.category_id = %L
+           AND s.category_id IN (%L)
            AND (
              s.name ILIKE %L OR 
              s.description ILIKE %L OR 
@@ -319,7 +322,7 @@ export const salesModel = {
            )
            ORDER BY s.created_at DESC
            LIMIT %L OFFSET %L`,
-          categoryId,
+          ids,
           `%${searchTerm}%`,
           `%${searchTerm}%`,
           `%${searchTerm}%`,
@@ -332,13 +335,13 @@ export const salesModel = {
            FROM Sales s
            JOIN Users u ON s.seller_id = u.id
            WHERE s.status = 'available' 
-           AND s.category_id = %L
+           AND s.category_id IN (%L)
            AND (
              s.name ILIKE %L OR 
              s.description ILIKE %L OR 
              u.name ILIKE %L
            )`,
-          categoryId,
+          ids,
           `%${searchTerm}%`,
           `%${searchTerm}%`,
           `%${searchTerm}%`

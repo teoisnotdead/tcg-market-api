@@ -52,12 +52,12 @@ export const deleteSale = async (req, res, next) => {
 
 export const getAllSales = async (req, res) => {
   try {
-    const { page = 1, limit = 10, category_id } = req.query;
+    const { page = 1, limit = 10, categories } = req.query;
     const offset = (page - 1) * limit;
 
     const [sales, total] = await Promise.all([
-      salesModel.findAll(limit, offset, category_id),
-      salesModel.countAll(category_id)
+      salesModel.findAll(limit, offset, categories),
+      salesModel.countAll(categories)
     ]);
 
     res.json({
@@ -169,6 +169,7 @@ export const checkoutSale = async (req, res, next) => {
 };
 
 export const updateSale = async (req, res) => {
+  console.log('updateSale', req.body);
   try {
     const { id } = req.params;
     const { name, description, price, image_url, quantity, category_id } = req.body;
@@ -199,20 +200,21 @@ export const updateSale = async (req, res) => {
 
     res.json(updatedSale);
   } catch (error) {
+    console.log('error', error);
     res.status(500).json({ message: "Error al actualizar la venta" });
   }
 };
 
 export const searchSales = async (req, res) => {
   try {
-    const { search, page = 1, limit = 10, category_id } = req.query;
+    const { search, page = 1, limit = 10, categories } = req.query;
     const offset = (page - 1) * limit;
 
     if (!search) {
       return res.status(400).json({ message: "El término de búsqueda es requerido" });
     }
 
-    const { sales, total } = await salesModel.searchSales(search, limit, offset, category_id);
+    const { sales, total } = await salesModel.searchSales(search, limit, offset, categories);
 
     res.json({
       sales,
