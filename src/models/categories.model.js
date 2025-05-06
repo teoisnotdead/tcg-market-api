@@ -82,34 +82,4 @@ export const categoriesModel = {
             throw error;
         }
     },
-
-    addCategoryToSale: async (saleId, categoryId) => {
-        try {
-            const query = format(
-                "INSERT INTO Sales_Categories (sale_id, category_id) VALUES (%L, %L) RETURNING *",
-                saleId,
-                categoryId
-            );
-            const result = await DB.query(query);
-            return result.rows[0];
-        } catch (error) {
-            console.error("Error al agregar categoría a la venta:", error);
-            throw error;
-        }
-    },
-
-    removeCategoryFromSale: async (saleId, categoryId) => {
-        try {
-            const query = format(
-                "DELETE FROM Sales_Categories WHERE sale_id = %L AND category_id = %L RETURNING *",
-                saleId,
-                categoryId
-            );
-            const result = await DB.query(query);
-            return result.rows[0] || null;
-        } catch (error) {
-            console.error("Error al remover categoría de la venta:", error);
-            throw error;
-        }
-    },
 }; 

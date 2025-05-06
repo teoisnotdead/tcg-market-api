@@ -57,29 +57,4 @@ export const deleteCategory = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
-};
-
-// Agregar categoría a una venta
-export const addCategoryToSale = async (req, res) => {
-    try {
-        const { saleId, categoryId } = req.body;
-        const result = await categoriesModel.addCategoryToSale(saleId, categoryId);
-        res.status(201).json(result);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Remover categoría de una venta
-export const removeCategoryFromSale = async (req, res) => {
-    try {
-        const { saleId, categoryId } = req.params;
-        const result = await categoriesModel.removeCategoryFromSale(saleId, categoryId);
-        if (!result) {
-            return res.status(404).json({ message: 'Relación no encontrada' });
-        }
-        res.json({ message: 'Categoría removida exitosamente de la venta' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
 }; 

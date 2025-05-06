@@ -11,6 +11,17 @@ CREATE TABLE Users (
     updated_at TIMESTAMP DEFAULT now()
 );
 
+CREATE TABLE Categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL UNIQUE,
+    slug VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    is_active BOOLEAN DEFAULT true,
+    display_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT now(),
+    updated_at TIMESTAMP DEFAULT now()
+);
+
 CREATE TABLE Sales (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     seller_id UUID REFERENCES Users(id) ON DELETE CASCADE,
@@ -21,6 +32,7 @@ CREATE TABLE Sales (
     quantity INTEGER NOT NULL CHECK (quantity >= 0),
     status VARCHAR(20) DEFAULT 'available',
     views INTEGER DEFAULT 0,
+    category_id UUID REFERENCES Categories(id) NOT NULL,
     created_at TIMESTAMP DEFAULT now()
 );
 
@@ -53,29 +65,6 @@ CREATE TABLE Favorites (
     UNIQUE(user_id, sale_id)
 );
 
--- Tabla de Categorías
-CREATE TABLE Categories (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(100) NOT NULL UNIQUE,
-    slug VARCHAR(100) NOT NULL UNIQUE,
-    description TEXT,
-    is_active BOOLEAN DEFAULT true,
-    display_order INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
-);
-
--- Tabla de Relación Sales-Categories
-CREATE TABLE Sales_Categories (
-    sale_id UUID REFERENCES Sales(id) ON DELETE CASCADE,
-    category_id UUID REFERENCES Categories(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT now(),
-    PRIMARY KEY (sale_id, category_id)
-);
-
--- Índices
-CREATE INDEX idx_sales_categories_category_id ON Sales_Categories(category_id);
-CREATE INDEX idx_sales_categories_sale_id ON Sales_Categories(sale_id);
 CREATE INDEX idx_categories_slug ON Categories(slug);
 CREATE INDEX idx_categories_display_order ON Categories(display_order);
 
@@ -96,7 +85,7 @@ ON CONFLICT (slug) DO UPDATE
 SET name = EXCLUDED.name,
     description = EXCLUDED.description,
     display_order = EXCLUDED.display_order,
-    updated_at = now(); 
+    updated_at = now();
 
 DROP TABLE IF EXISTS "Users";
 DROP TABLE IF EXISTS "Sales";
@@ -104,4 +93,3 @@ DROP TABLE IF EXISTS "Comments";
 DROP TABLE IF EXISTS "Purchases";
 DROP TABLE IF EXISTS "Favorites";
 DROP TABLE IF EXISTS "Categories";
-DROP TABLE IF EXISTS "Sales_Categories";

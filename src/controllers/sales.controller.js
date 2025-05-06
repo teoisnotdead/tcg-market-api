@@ -4,15 +4,17 @@ import { categoriesModel } from "../models/categories.model.js";
 
 export const createSale = async (req, res, next) => {
   try {
-    const { name, description, price, image_url, quantity } = req.body;
+    const { name, description, price, image_url, quantity, category_id } = req.body;
     const seller_id = req.user.id;
 
-    if (!name || !description || !price || !quantity) {
-      return res.status(400).json({ message: "Todos los campos son obligatorios" });
+    if (!name || !description || !price || !quantity || !category_id) {
+      return res.status(400).json({ message: "Todos los campos son obligatorios, incluida la categoría" });
     }
 
-    if (description.length > 100) {
-      return res.status(400).json({ message: "La descripción no puede tener más de 100 caracteres" });
+    // Validar que la categoría exista
+    const category = await categoriesModel.findById(category_id);
+    if (!category) {
+      return res.status(400).json({ message: "La categoría no existe" });
     }
 
     const sale = await salesModel.create({
@@ -21,7 +23,8 @@ export const createSale = async (req, res, next) => {
       description,
       price,
       image_url: image_url || "https://placehold.co/200x300",
-      quantity
+      quantity,
+      category_id
     });
 
     res.status(201).json(sale);
@@ -49,15 +52,12 @@ export const deleteSale = async (req, res, next) => {
 
 export const getAllSales = async (req, res) => {
   try {
-    const { page = 1, limit = 10, categories } = req.query;
+    const { page = 1, limit = 10, category_id } = req.query;
     const offset = (page - 1) * limit;
-    
-    // Convertir el parámetro categories a un array si existe
-    const categoryIds = categories ? categories.split(',') : null;
 
     const [sales, total] = await Promise.all([
-      salesModel.findAll(limit, offset, categoryIds),
-      salesModel.countAll(categoryIds)
+      salesModel.findAll(limit, offset, category_id),
+      salesModel.countAll(category_id)
     ]);
 
     res.json({
@@ -171,27 +171,17 @@ export const checkoutSale = async (req, res, next) => {
 export const updateSale = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, image_url, quantity, categories } = req.body;
+    const { name, description, price, image_url, quantity, category_id } = req.body;
     const seller_id = req.user.id;
 
-    // Validar que la venta exista y pertenezca al usuario
-    const sale = await salesModel.findById(id);
-    if (!sale) {
-      return res.status(404).json({ message: "Venta no encontrada" });
+    if (!category_id) {
+      return res.status(400).json({ message: "La categoría es obligatoria" });
     }
 
-    if (sale.seller_id !== seller_id) {
-      return res.status(403).json({ message: "No tienes permiso para actualizar esta venta" });
-    }
-
-    // Validar categorías si se proporcionan
-    if (categories && Array.isArray(categories)) {
-      for (const categoryId of categories) {
-        const category = await categoriesModel.findById(categoryId);
-        if (!category) {
-          return res.status(400).json({ message: `Categoría con ID ${categoryId} no encontrada` });
-        }
-      }
+    // Validar que la categoría exista
+    const category = await categoriesModel.findById(category_id);
+    if (!category) {
+      return res.status(400).json({ message: "La categoría no existe" });
     }
 
     const updatedSale = await salesModel.update(id, seller_id, {
@@ -200,7 +190,7 @@ export const updateSale = async (req, res) => {
       price,
       image_url,
       quantity,
-      categories
+      category_id
     });
 
     if (!updatedSale) {
@@ -209,24 +199,20 @@ export const updateSale = async (req, res) => {
 
     res.json(updatedSale);
   } catch (error) {
-    console.error("Error al actualizar la venta:", error);
     res.status(500).json({ message: "Error al actualizar la venta" });
   }
 };
 
 export const searchSales = async (req, res) => {
   try {
-    const { search, page = 1, limit = 10, categories } = req.query;
+    const { search, page = 1, limit = 10, category_id } = req.query;
     const offset = (page - 1) * limit;
 
     if (!search) {
       return res.status(400).json({ message: "El término de búsqueda es requerido" });
     }
 
-    // Convertir el parámetro categories a un array si existe
-    const categoryIds = categories ? categories.split(',') : null;
-
-    const { sales, total } = await salesModel.searchSales(search, limit, offset, categoryIds);
+    const { sales, total } = await salesModel.searchSales(search, limit, offset, category_id);
 
     res.json({
       sales,

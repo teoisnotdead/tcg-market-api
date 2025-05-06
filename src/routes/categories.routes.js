@@ -5,8 +5,6 @@ import {
     createCategory,
     updateCategory,
     deleteCategory,
-    addCategoryToSale,
-    removeCategoryFromSale,
 } from '../controllers/categories.controller.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
 
@@ -20,7 +18,5 @@ router.get('/:id', getCategoryById);
 router.post('/', verifyToken, createCategory);
 router.put('/:id', verifyToken, updateCategory);
 router.delete('/:id', verifyToken, deleteCategory);
-router.post('/sales', verifyToken, addCategoryToSale);
-router.delete('/sales/:saleId/:categoryId', verifyToken, removeCategoryFromSale);
 
 export default router; 
