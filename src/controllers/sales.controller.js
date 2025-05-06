@@ -1,5 +1,6 @@
 import { salesModel } from "../models/sales.model.js";
 import { purchasesModel } from "../models/purchases.model.js";
+import { categoriesModel } from "../models/categories.model.js";
 
 export const createSale = async (req, res, next) => {
   try {
@@ -46,29 +47,29 @@ export const deleteSale = async (req, res, next) => {
   }
 };
 
-export const getAllSales = async (req, res, next) => {
+export const getAllSales = async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const offset = parseInt(req.query.offset, 10) || 0;
+    const { page = 1, limit = 10, categories } = req.query;
+    const offset = (page - 1) * limit;
+    
+    // Convertir el parámetro categories a un array si existe
+    const categoryIds = categories ? categories.split(',') : null;
 
-    const sales = await salesModel.findAll(limit, offset);
-
-    const totalSales = await salesModel.countAll();
-
-    const totalPages = Math.ceil(totalSales / limit);
+    const [sales, total] = await Promise.all([
+      salesModel.findAll(limit, offset, categoryIds),
+      salesModel.countAll(categoryIds)
+    ]);
 
     res.json({
-      currentPage: Math.floor(offset / limit) + 1,
-      totalPages,
-      totalItems: totalSales,
-      itemsPerPage: limit,
-      data: sales,
+      sales,
+      totalPages: Math.ceil(total / limit),
+      currentPage: parseInt(page),
+      total
     });
   } catch (error) {
-    next(error);
+    res.status(500).json({ message: error.message });
   }
 };
-
 
 export const getSaleById = async (req, res, next) => {
   try {
@@ -104,10 +105,9 @@ export const getActiveSales = async (req, res, next) => {
     const userId = req.user.id;
     const limit = parseInt(req.query.limit, 10) || 10;
     const offset = parseInt(req.query.offset, 10) || 0;
+    const categoryId = req.query.category;
 
-
-    const { sales, totalSales } = await salesModel.findActiveSalesByUser(userId, limit, offset);
-
+    const { sales, totalSales } = await salesModel.findActiveSalesByUser(userId, limit, offset, categoryId);
 
     res.json({
       totalItems: totalSales,
@@ -168,19 +168,30 @@ export const checkoutSale = async (req, res, next) => {
   }
 };
 
-export const updateSale = async (req, res, next) => {
+export const updateSale = async (req, res) => {
   try {
     const { id } = req.params;
+    const { name, description, price, image_url, quantity, categories } = req.body;
     const seller_id = req.user.id;
 
-    const { name, description, price, image_url, quantity } = req.body;
-
-    if (!name || !description || !price || !quantity) {
-      return res.status(400).json({ message: "Todos los campos son obligatorios" });
+    // Validar que la venta exista y pertenezca al usuario
+    const sale = await salesModel.findById(id);
+    if (!sale) {
+      return res.status(404).json({ message: "Venta no encontrada" });
     }
 
-    if (description.length > 100) {
-      return res.status(400).json({ message: "La descripción no puede tener más de 100 caracteres" });
+    if (sale.seller_id !== seller_id) {
+      return res.status(403).json({ message: "No tienes permiso para actualizar esta venta" });
+    }
+
+    // Validar categorías si se proporcionan
+    if (categories && Array.isArray(categories)) {
+      for (const categoryId of categories) {
+        const category = await categoriesModel.findById(categoryId);
+        if (!category) {
+          return res.status(400).json({ message: `Categoría con ID ${categoryId} no encontrada` });
+        }
+      }
     }
 
     const updatedSale = await salesModel.update(id, seller_id, {
@@ -189,39 +200,42 @@ export const updateSale = async (req, res, next) => {
       price,
       image_url,
       quantity,
+      categories
     });
 
     if (!updatedSale) {
-      return res.status(403).json({ message: "No tienes permiso para modificar esta venta" });
+      return res.status(404).json({ message: "No se pudo actualizar la venta" });
     }
 
-    res.json({ message: "Venta modificada exitosamente", sale: updatedSale });
+    res.json(updatedSale);
   } catch (error) {
-    next(error);
+    console.error("Error al actualizar la venta:", error);
+    res.status(500).json({ message: "Error al actualizar la venta" });
   }
 };
 
-export const searchSales = async (req, res, next) => {
+export const searchSales = async (req, res) => {
   try {
-    const { q } = req.query;
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const offset = parseInt(req.query.offset, 10) || 0;
+    const { search, page = 1, limit = 10, categories } = req.query;
+    const offset = (page - 1) * limit;
 
-    if (!q) {
+    if (!search) {
       return res.status(400).json({ message: "El término de búsqueda es requerido" });
     }
 
-    const { sales, totalItems } = await salesModel.searchSales(q, limit, offset);
+    // Convertir el parámetro categories a un array si existe
+    const categoryIds = categories ? categories.split(',') : null;
+
+    const { sales, total } = await salesModel.searchSales(search, limit, offset, categoryIds);
 
     res.json({
-      currentPage: Math.floor(offset / limit) + 1,
-      totalPages: Math.ceil(totalItems / limit),
-      totalItems,
-      itemsPerPage: limit,
-      data: sales,
+      sales,
+      totalPages: Math.ceil(total / limit),
+      currentPage: parseInt(page),
+      total
     });
   } catch (error) {
-    next(error);
+    res.status(500).json({ message: error.message });
   }
 };
 

@@ -2,33 +2,80 @@ import { DB } from "../config/db.js";
 import format from "pg-format";
 
 export const salesModel = {
-  create: async ({ seller_id, name, description, price, image_url, quantity }) => {
+  create: async ({ seller_id, name, description, price, image_url, quantity, categories }) => {
     try {
-      const query = format(
-        "INSERT INTO Sales (seller_id, name, description, price, image_url, quantity) VALUES (%L, %L, %L, %L, %L, %L) RETURNING *",
-        seller_id,
-        name,
-        description,
-        price,
-        image_url,
-        quantity
-      );
+      // Iniciamos una transacción
+      const client = await DB.getClient();
+      try {
+        await client.query('BEGIN');
 
-      const { rows } = await DB.query(query);
-      return rows[0];
+        // Creamos la venta
+        const query = format(
+          "INSERT INTO Sales (seller_id, name, description, price, image_url, quantity) VALUES (%L, %L, %L, %L, %L, %L) RETURNING *",
+          seller_id,
+          name,
+          description,
+          price,
+          image_url,
+          quantity
+        );
+
+        const { rows } = await client.query(query);
+        const sale = rows[0];
+
+        // Si se proporcionaron categorías, las agregamos
+        if (categories && Array.isArray(categories) && categories.length > 0) {
+          const values = categories.map(categoryId => 
+            format('(%L, %L)', sale.id, categoryId)
+          ).join(',');
+          
+          await client.query(
+            `INSERT INTO Sales_Categories (sale_id, category_id) VALUES ${values}`
+          );
+        }
+
+        await client.query('COMMIT');
+
+        // Retornamos la venta con sus categorías
+        return await this.findById(sale.id);
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
     } catch (error) {
       console.error("Error al registrar la venta:", error);
       throw error;
     }
   },
 
-  findAll: async (limit = 10, offset = 0) => {
+  findAll: async (limit = 10, offset = 0, categoryIds = null) => {
     try {
-      const query = format(
-        "SELECT * FROM Sales WHERE status = 'available' ORDER BY created_at DESC LIMIT %L OFFSET %L",
-        limit,
-        offset
-      );
+      let query;
+      if (categoryIds && Array.isArray(categoryIds) && categoryIds.length > 0) {
+        query = format(
+          `SELECT DISTINCT s.* 
+           FROM Sales s
+           JOIN Sales_Categories sc ON s.id = sc.sale_id
+           WHERE s.status = 'available' 
+           AND sc.category_id IN (%L)
+           GROUP BY s.id
+           HAVING COUNT(DISTINCT sc.category_id) = %L
+           ORDER BY s.created_at DESC 
+           LIMIT %L OFFSET %L`,
+          categoryIds,
+          categoryIds.length,
+          limit,
+          offset
+        );
+      } else {
+        query = format(
+          "SELECT * FROM Sales WHERE status = 'available' ORDER BY created_at DESC LIMIT %L OFFSET %L",
+          limit,
+          offset
+        );
+      }
       const { rows } = await DB.query(query);
       return rows;
     } catch (error) {
@@ -37,9 +84,24 @@ export const salesModel = {
     }
   },
 
-  countAll: async () => {
+  countAll: async (categoryIds = null) => {
     try {
-      const query = "SELECT COUNT(*) FROM Sales WHERE status = 'available'";
+      let query;
+      if (categoryIds && Array.isArray(categoryIds) && categoryIds.length > 0) {
+        query = format(
+          `SELECT COUNT(DISTINCT s.id) 
+           FROM Sales s
+           JOIN Sales_Categories sc ON s.id = sc.sale_id
+           WHERE s.status = 'available' 
+           AND sc.category_id IN (%L)
+           GROUP BY s.id
+           HAVING COUNT(DISTINCT sc.category_id) = %L`,
+          categoryIds,
+          categoryIds.length
+        );
+      } else {
+        query = "SELECT COUNT(*) FROM Sales WHERE status = 'available'";
+      }
       const { rows } = await DB.query(query);
       return parseInt(rows[0].count, 10);
     } catch (error) {
@@ -53,10 +115,23 @@ export const salesModel = {
       const query = format(
         `SELECT 
           s.*, 
-          u.name AS seller_name 
+          u.name AS seller_name,
+          COALESCE(
+            json_agg(
+              json_build_object(
+                'id', c.id,
+                'name', c.name,
+                'slug', c.slug
+              )
+            ) FILTER (WHERE c.id IS NOT NULL),
+            '[]'
+          ) as categories
          FROM Sales s
          JOIN Users u ON s.seller_id = u.id
-         WHERE s.id = %L`,
+         LEFT JOIN Sales_Categories sc ON s.id = sc.sale_id
+         LEFT JOIN Categories c ON sc.category_id = c.id
+         WHERE s.id = %L
+         GROUP BY s.id, u.name`,
         sale_id
       );
 
@@ -112,10 +187,25 @@ export const salesModel = {
   findAllSalesBySeller: async (seller_id) => {
     try {
       const query = format(`
-        SELECT s.*, p.sale_id 
+        SELECT 
+          s.*, 
+          p.sale_id,
+          COALESCE(
+            json_agg(
+              json_build_object(
+                'id', c.id,
+                'name', c.name,
+                'slug', c.slug
+              )
+            ) FILTER (WHERE c.id IS NOT NULL),
+            '[]'
+          ) as categories
         FROM Sales s
         LEFT JOIN Purchases p ON s.id = p.sale_id AND p.seller_id = %L
+        LEFT JOIN Sales_Categories sc ON s.id = sc.sale_id
+        LEFT JOIN Categories c ON sc.category_id = c.id
         WHERE s.seller_id = %L 
+        GROUP BY s.id, p.sale_id
         ORDER BY s.created_at DESC
       `, seller_id, seller_id);
 
@@ -127,30 +217,91 @@ export const salesModel = {
     }
   },
 
-
-  findActiveSalesByUser: async (seller_id, limit = 10, offset = 0) => {
+  findActiveSalesByUser: async (seller_id, limit = 10, offset = 0, categoryId = null) => {
     try {
-      const query = format(
-        `SELECT * FROM Sales 
-        WHERE seller_id = %L AND status = 'available' 
-        ORDER BY created_at DESC
-        LIMIT %L OFFSET %L`,
-        seller_id,
-        limit,
-        offset
-      );
+      let query;
+      let countQuery;
+
+      if (categoryId) {
+        query = format(
+          `SELECT 
+            s.*,
+            COALESCE(
+              json_agg(
+                json_build_object(
+                  'id', c.id,
+                  'name', c.name,
+                  'slug', c.slug
+                )
+              ) FILTER (WHERE c.id IS NOT NULL),
+              '[]'
+            ) as categories
+          FROM Sales s
+          LEFT JOIN Sales_Categories sc ON s.id = sc.sale_id
+          LEFT JOIN Categories c ON sc.category_id = c.id
+          WHERE s.seller_id = %L 
+          AND s.status = 'available'
+          AND sc.category_id = %L
+          GROUP BY s.id
+          ORDER BY s.created_at DESC
+          LIMIT %L OFFSET %L`,
+          seller_id,
+          categoryId,
+          limit,
+          offset
+        );
+
+        countQuery = format(
+          `SELECT COUNT(DISTINCT s.id) 
+           FROM Sales s
+           JOIN Sales_Categories sc ON s.id = sc.sale_id
+           WHERE s.seller_id = %L 
+           AND s.status = 'available'
+           AND sc.category_id = %L`,
+          seller_id,
+          categoryId
+        );
+      } else {
+        query = format(
+          `SELECT 
+            s.*,
+            COALESCE(
+              json_agg(
+                json_build_object(
+                  'id', c.id,
+                  'name', c.name,
+                  'slug', c.slug
+                )
+              ) FILTER (WHERE c.id IS NOT NULL),
+              '[]'
+            ) as categories
+          FROM Sales s
+          LEFT JOIN Sales_Categories sc ON s.id = sc.sale_id
+          LEFT JOIN Categories c ON sc.category_id = c.id
+          WHERE s.seller_id = %L 
+          AND s.status = 'available'
+          GROUP BY s.id
+          ORDER BY s.created_at DESC
+          LIMIT %L OFFSET %L`,
+          seller_id,
+          limit,
+          offset
+        );
+
+        countQuery = format(
+          `SELECT COUNT(*) 
+           FROM Sales 
+           WHERE seller_id = %L 
+           AND status = 'available'`,
+          seller_id
+        );
+      }
 
       const { rows } = await DB.query(query);
-
-      const countQuery = format(
-        `SELECT COUNT(*) FROM Sales WHERE seller_id = %L AND status = 'available'`,
-        seller_id
-      );
-
       const countResult = await DB.query(countQuery);
-      const totalSales = parseInt(countResult.rows[0].count, 10); // Total de ventas activas
+      const totalSales = parseInt(countResult.rows[0].count, 10);
 
-      return { sales: rows, totalSales }; // Retorna ventas y total de ventas
+      return { sales: rows, totalSales };
     } catch (error) {
       console.error("Error al obtener ventas activas del usuario:", error);
       throw error;
@@ -174,24 +325,62 @@ export const salesModel = {
     }
   },
 
-
-  update: async (sale_id, seller_id, { name, description, price, image_url, quantity }) => {
+  update: async (sale_id, seller_id, { name, description, price, image_url, quantity, categories }) => {
     try {
-      // Verificamos si la venta existe y si el vendedor es el propietario
-      const query = format(
-        "UPDATE Sales SET name = %L, description = %L, price = %L, image_url = %L, quantity = %L WHERE id = %L AND seller_id = %L RETURNING *",
-        name,
-        description,
-        price,
-        image_url,
-        quantity,
-        sale_id,
-        seller_id
-      );
-      const { rows } = await DB.query(query);
+      // Iniciamos una transacción
+      const client = await DB.getClient();
+      try {
+        await client.query('BEGIN');
 
-      // Si no se encontró una venta que coincida con el seller_id, retornamos null
-      return rows[0] || null;
+        // Actualizamos la venta
+        const query = format(
+          "UPDATE Sales SET name = %L, description = %L, price = %L, image_url = %L, quantity = %L WHERE id = %L AND seller_id = %L RETURNING *",
+          name,
+          description,
+          price,
+          image_url,
+          quantity,
+          sale_id,
+          seller_id
+        );
+        const { rows } = await client.query(query);
+
+        if (rows.length === 0) {
+          await client.query('ROLLBACK');
+          return null;
+        }
+
+        // Si se proporcionaron categorías, actualizamos las relaciones
+        if (categories && Array.isArray(categories)) {
+          // Primero eliminamos las categorías existentes
+          await client.query(
+            'DELETE FROM Sales_Categories WHERE sale_id = $1',
+            [sale_id]
+          );
+
+          // Luego insertamos las nuevas categorías
+          if (categories.length > 0) {
+            const values = categories.map(categoryId => 
+              format('(%L, %L)', sale_id, categoryId)
+            ).join(',');
+            
+            await client.query(
+              `INSERT INTO Sales_Categories (sale_id, category_id) VALUES ${values}`
+            );
+          }
+        }
+
+        await client.query('COMMIT');
+
+        // Obtenemos la venta actualizada con sus categorías
+        const updatedSale = await this.findById(sale_id);
+        return updatedSale;
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
     } catch (error) {
       console.error("Error al actualizar la venta:", error);
       throw error;
@@ -212,53 +401,98 @@ export const salesModel = {
     }
   },
 
-  searchSales: async (searchTerm, limit = 10, offset = 0) => {
+  searchSales: async (searchTerm, limit = 10, offset = 0, categoryIds = null) => {
     try {
-      const query = format(
-        `SELECT s.*, u.name AS seller_name 
-         FROM Sales s
-         JOIN Users u ON s.seller_id = u.id
-         WHERE s.status = 'available' 
-         AND (
-           s.name ILIKE %L OR 
-           s.description ILIKE %L OR 
-           u.name ILIKE %L
-         )
-         ORDER BY s.created_at DESC
-         LIMIT %L OFFSET %L`,
-        `%${searchTerm}%`,
-        `%${searchTerm}%`,
-        `%${searchTerm}%`,
-        limit,
-        offset
-      );
+      let query;
+      let countQuery;
 
-      const countQuery = format(
-        `SELECT COUNT(*) 
-         FROM Sales s
-         JOIN Users u ON s.seller_id = u.id
-         WHERE s.status = 'available' 
-         AND (
-           s.name ILIKE %L OR 
-           s.description ILIKE %L OR 
-           u.name ILIKE %L
-         )`,
-        `%${searchTerm}%`,
-        `%${searchTerm}%`,
-        `%${searchTerm}%`
-      );
+      if (categoryIds && Array.isArray(categoryIds) && categoryIds.length > 0) {
+        query = format(
+          `SELECT DISTINCT s.*, u.name AS seller_name 
+           FROM Sales s
+           JOIN Users u ON s.seller_id = u.id
+           JOIN Sales_Categories sc ON s.id = sc.sale_id
+           WHERE s.status = 'available' 
+           AND sc.category_id IN (%L)
+           AND (
+             s.name ILIKE %L OR 
+             s.description ILIKE %L OR 
+             u.name ILIKE %L
+           )
+           GROUP BY s.id, u.name
+           HAVING COUNT(DISTINCT sc.category_id) = %L
+           ORDER BY s.created_at DESC
+           LIMIT %L OFFSET %L`,
+          categoryIds,
+          `%${searchTerm}%`,
+          `%${searchTerm}%`,
+          `%${searchTerm}%`,
+          categoryIds.length,
+          limit,
+          offset
+        );
 
-      const [results, countResult] = await Promise.all([
-        DB.query(query),
-        DB.query(countQuery)
-      ]);
+        countQuery = format(
+          `SELECT COUNT(DISTINCT s.id) 
+           FROM Sales s
+           JOIN Users u ON s.seller_id = u.id
+           JOIN Sales_Categories sc ON s.id = sc.sale_id
+           WHERE s.status = 'available' 
+           AND sc.category_id IN (%L)
+           AND (
+             s.name ILIKE %L OR 
+             s.description ILIKE %L OR 
+             u.name ILIKE %L
+           )
+           GROUP BY s.id
+           HAVING COUNT(DISTINCT sc.category_id) = %L`,
+          categoryIds,
+          `%${searchTerm}%`,
+          `%${searchTerm}%`,
+          `%${searchTerm}%`,
+          categoryIds.length
+        );
+      } else {
+        query = format(
+          `SELECT s.*, u.name AS seller_name 
+           FROM Sales s
+           JOIN Users u ON s.seller_id = u.id
+           WHERE s.status = 'available' 
+           AND (
+             s.name ILIKE %L OR 
+             s.description ILIKE %L OR 
+             u.name ILIKE %L
+           )
+           ORDER BY s.created_at DESC
+           LIMIT %L OFFSET %L`,
+          `%${searchTerm}%`,
+          `%${searchTerm}%`,
+          `%${searchTerm}%`,
+          limit,
+          offset
+        );
 
-      const totalItems = parseInt(countResult.rows[0].count, 10);
+        countQuery = format(
+          `SELECT COUNT(*) 
+           FROM Sales s
+           JOIN Users u ON s.seller_id = u.id
+           WHERE s.status = 'available' 
+           AND (
+             s.name ILIKE %L OR 
+             s.description ILIKE %L OR 
+             u.name ILIKE %L
+           )`,
+          `%${searchTerm}%`,
+          `%${searchTerm}%`,
+          `%${searchTerm}%`
+        );
+      }
 
-      return {
-        sales: results.rows,
-        totalItems
-      };
+      const { rows } = await DB.query(query);
+      const countResult = await DB.query(countQuery);
+      const total = parseInt(countResult.rows[0].count, 10);
+
+      return { sales: rows, total };
     } catch (error) {
       console.error("Error al buscar ventas:", error);
       throw error;

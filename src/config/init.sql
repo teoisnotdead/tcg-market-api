@@ -53,8 +53,55 @@ CREATE TABLE Favorites (
     UNIQUE(user_id, sale_id)
 );
 
+-- Tabla de Categorías
+CREATE TABLE Categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL UNIQUE,
+    slug VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    is_active BOOLEAN DEFAULT true,
+    display_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT now(),
+    updated_at TIMESTAMP DEFAULT now()
+);
+
+-- Tabla de Relación Sales-Categories
+CREATE TABLE Sales_Categories (
+    sale_id UUID REFERENCES Sales(id) ON DELETE CASCADE,
+    category_id UUID REFERENCES Categories(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT now(),
+    PRIMARY KEY (sale_id, category_id)
+);
+
+-- Índices
+CREATE INDEX idx_sales_categories_category_id ON Sales_Categories(category_id);
+CREATE INDEX idx_sales_categories_sale_id ON Sales_Categories(sale_id);
+CREATE INDEX idx_categories_slug ON Categories(slug);
+CREATE INDEX idx_categories_display_order ON Categories(display_order);
+
+-- Datos iniciales
+INSERT INTO Categories (name, slug, description, display_order) VALUES
+    ('Digimon', 'digimon', 'Cartas coleccionables del juego Digimon Card Game', 1),
+    ('Dragon Ball Fusion', 'dragon-ball-fusion', 'Cartas del juego Dragon Ball Fusion World', 2),
+    ('Dragon Ball Masters', 'dragon-ball-masters', 'Cartas del juego Dragon Ball Super Card Game', 3),
+    ('Gundam Card Game', 'gundam-card-game', 'Cartas del juego Gundam Card Game', 4),
+    ('Magic the gathering', 'magic-the-gathering', 'Cartas del juego Magic: The Gathering', 5),
+    ('Mitos y leyendas', 'mitos-y-leyendas', 'Cartas del juego Mitos y Leyendas', 6),
+    ('One Piece', 'one-piece', 'Cartas del juego One Piece Card Game', 7),
+    ('Otro', 'otro', 'Otras cartas y productos coleccionables', 8),
+    ('Pokémon', 'pokemon', 'Cartas del juego Pokémon Trading Card Game', 9),
+    ('Union Arena', 'union-arena', 'Cartas del juego Union Arena', 10),
+    ('Yu-Gi-Oh', 'yu-gi-oh', 'Cartas del juego Yu-Gi-Oh! Trading Card Game', 11)
+ON CONFLICT (slug) DO UPDATE 
+SET name = EXCLUDED.name,
+    description = EXCLUDED.description,
+    display_order = EXCLUDED.display_order,
+    updated_at = now(); 
+
 DROP TABLE IF EXISTS "Users";
 DROP TABLE IF EXISTS "Sales";
 DROP TABLE IF EXISTS "Comments";
 DROP TABLE IF EXISTS "Purchases";
 DROP TABLE IF EXISTS "Favorites";
+DROP TABLE IF EXISTS "Categories";
+DROP TABLE IF EXISTS "Sales_Categories";

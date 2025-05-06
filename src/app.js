@@ -1,11 +1,14 @@
 import express from "express"
 import cors from "cors"
-import authRoutes from "./routes/auth.routes.js"
-import userRoutes from "./routes/users.routes.js"
-import commentRoutes from "./routes/comments.routes.js"
-import saleRoutes from "./routes/sales.routes.js"
-import purchaseRoutes from "./routes/purchases.routes.js"
-import favoriteRoutes from "./routes/favorites.routes.js"
+import {
+    authRoutes,
+    userRoutes,
+    commentRoutes,
+    saleRoutes,
+    purchaseRoutes,
+    favoriteRoutes,
+    categoryRoutes
+} from "./routes/index.js"
 
 const app = express()
 
@@ -20,6 +23,7 @@ app.use("/comments", commentRoutes)
 app.use("/sales", saleRoutes)
 app.use("/purchases", purchaseRoutes)
 app.use("/favorites", favoriteRoutes)
+app.use("/categories", categoryRoutes)
 
 // Error handler
 app.use((err, req, res, next) => {
