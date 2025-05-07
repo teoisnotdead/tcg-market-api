@@ -52,7 +52,9 @@ export const loginUser = async (req, res, next) => {
 
 export const getProfile = async (req, res, next) => {
     try {
-        const userId = req.user.id
+        console.log('req.user:', req.user);
+        console.log('Buscando usuario con id:', req.user.id);
+        const userId = req.user.userId
         const user = await userModel.findById(userId)
 
         if (!user) {
@@ -72,7 +74,7 @@ export const getProfile = async (req, res, next) => {
 
 export const updateProfile = async (req, res, next) => {
     try {
-        const userId = req.user.id
+        const userId = req.user.userId
         const updatedUser = await userModel.update(userId, req.body)
 
         res.json(updatedUser)
@@ -84,7 +86,7 @@ export const updateProfile = async (req, res, next) => {
 
 export const getProfileStats = async (req, res, next) => {
     try {
-        const user_id = req.user.id;
+        const user_id = req.user.userId;
 
         // Obtener estadísticas de ventas y compras
         const activeSalesCount = await salesModel.getActiveSalesCountByUser(user_id);

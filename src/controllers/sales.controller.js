@@ -44,7 +44,7 @@ export const createSale = async (req, res, next) => {
 export const deleteSale = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const seller_id = req.user.id;
+    const seller_id = req.user.userId;
 
     const deletedSale = await salesModel.delete(id, seller_id);
 
@@ -102,7 +102,7 @@ export const getSaleById = async (req, res, next) => {
 
 export const getMySales = async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const sales = await salesModel.findAllSalesBySeller(userId);
 
     res.json(sales);
@@ -113,7 +113,7 @@ export const getMySales = async (req, res, next) => {
 
 export const getActiveSales = async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const limit = parseInt(req.query.limit, 10) || 10;
     const offset = parseInt(req.query.offset, 10) || 0;
     const categoryId = req.query.category;
@@ -134,7 +134,7 @@ export const getActiveSales = async (req, res, next) => {
 
 export const checkoutSale = async (req, res, next) => {
   try {
-    const user_id = req.user.id;
+    const user_id = req.user.userId;
     const { sale_id, quantity } = req.body;
 
     if (!sale_id || !quantity) {
@@ -151,7 +151,6 @@ export const checkoutSale = async (req, res, next) => {
     if (sale.quantity < quantity) {
       return res.status(400).json({ message: "Stock insuficiente" });
     }
-
 
     const remainingQuantity = sale.quantity - quantity;
 

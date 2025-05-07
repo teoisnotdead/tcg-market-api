@@ -2,7 +2,7 @@ import { favoritesModel } from "../models/favorites.model.js";
 
 export const addFavorite = async (req, res, next) => {
   try {
-    const user_id = req.user.id;
+    const user_id = req.user.userId;
     const { sale_id } = req.params;
 
     const favorite = await favoritesModel.addFavorite(user_id, sale_id);
@@ -14,7 +14,7 @@ export const addFavorite = async (req, res, next) => {
 
 export const removeFavorite = async (req, res, next) => {
   try {
-    const user_id = req.user.id;
+    const user_id = req.user.userId;
     const { sale_id } = req.params;
 
     const favorite = await favoritesModel.removeFavorite(user_id, sale_id);
@@ -29,7 +29,7 @@ export const removeFavorite = async (req, res, next) => {
 
 export const getUserFavorites = async (req, res, next) => {
   try {
-    const user_id = req.user.id;
+    const user_id = req.user.userId;
     const limit = parseInt(req.query.limit, 10) || 10;
     const offset = parseInt(req.query.offset, 10) || 0;
 
@@ -49,7 +49,7 @@ export const getUserFavorites = async (req, res, next) => {
 
 export const checkFavorite = async (req, res, next) => {
   try {
-    const user_id = req.user.id;
+    const user_id = req.user.userId;
     const { sale_id } = req.params;
 
     const isFavorite = await favoritesModel.isFavorite(user_id, sale_id);

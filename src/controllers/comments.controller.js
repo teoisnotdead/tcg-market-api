@@ -13,7 +13,7 @@ export const getCommentsBySaleId = async (req, res, next) => {
 export const addComment = async (req, res, next) => {
   try {
     const { sale_id, content } = req.body;
-    const user_id = req.user.id;
+    const user_id = req.user.userId;
 
     if (!sale_id || !content) {
       return res.status(400).json({ message: "Se requiere sale_id y comentario" });
