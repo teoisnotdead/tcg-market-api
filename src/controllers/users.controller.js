@@ -52,8 +52,6 @@ export const loginUser = async (req, res, next) => {
 
 export const getProfile = async (req, res, next) => {
     try {
-        console.log('req.user:', req.user);
-        console.log('Buscando usuario con id:', req.user.id);
         const userId = req.user.userId
         const user = await userModel.findById(userId)
 
@@ -92,9 +90,6 @@ export const getProfileStats = async (req, res, next) => {
         const activeSalesCount = await salesModel.getActiveSalesCountByUser(user_id);
         const salesStats = await purchasesModel.getSalesStatsByUser(user_id);
         const purchasesStats = await purchasesModel.getPurchasesStatsByUser(user_id);
-        console.log('actiactiveSalesCountve', activeSalesCount);
-        console.log('salesStats', salesStats)
-        console.log('purchasesStats', purchasesStats)
 
         // Construimos la respuesta final
         res.json({
