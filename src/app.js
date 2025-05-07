@@ -7,7 +7,8 @@ import {
     saleRoutes,
     purchaseRoutes,
     favoriteRoutes,
-    categoryRoutes
+    categoryRoutes,
+    languageRoutes
 } from "./routes/index.js"
 
 const app = express()
@@ -24,6 +25,7 @@ app.use("/sales", saleRoutes)
 app.use("/purchases", purchaseRoutes)
 app.use("/favorites", favoriteRoutes)
 app.use("/categories", categoryRoutes)
+app.use("/languages", languageRoutes)
 
 // Error handler
 app.use((err, req, res, next) => {

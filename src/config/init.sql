@@ -22,6 +22,16 @@ CREATE TABLE Categories (
     updated_at TIMESTAMP DEFAULT now()
 );
 
+CREATE TABLE Languages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL UNIQUE,
+    slug VARCHAR(100) NOT NULL UNIQUE,
+    is_active BOOLEAN DEFAULT true,
+    display_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT now(),
+    updated_at TIMESTAMP DEFAULT now()
+);
+
 CREATE TABLE Sales (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     seller_id UUID REFERENCES Users(id) ON DELETE CASCADE,
@@ -33,6 +43,7 @@ CREATE TABLE Sales (
     status VARCHAR(20) DEFAULT 'available',
     views INTEGER DEFAULT 0,
     category_id UUID REFERENCES Categories(id) NOT NULL,
+    language_id UUID REFERENCES Languages(id) NOT NULL,
     created_at TIMESTAMP DEFAULT now()
 );
 
@@ -54,6 +65,8 @@ CREATE TABLE Purchases (
     price DECIMAL(10, 2) NOT NULL,
     image_url VARCHAR(255),
     quantity INTEGER NOT NULL CHECK (quantity > 0),
+    language_id UUID REFERENCES Languages(id) NOT NULL,
+    category_id UUID REFERENCES Categories(id) NOT NULL,
     created_at TIMESTAMP DEFAULT now()
 );
 
@@ -67,6 +80,8 @@ CREATE TABLE Favorites (
 
 CREATE INDEX idx_categories_slug ON Categories(slug);
 CREATE INDEX idx_categories_display_order ON Categories(display_order);
+CREATE INDEX idx_languages_slug ON Languages(slug);
+CREATE INDEX idx_languages_display_order ON Languages(display_order);
 
 -- Datos iniciales
 INSERT INTO Categories (name, slug, description, display_order) VALUES
@@ -87,9 +102,27 @@ SET name = EXCLUDED.name,
     display_order = EXCLUDED.display_order,
     updated_at = now();
 
+-- Datos iniciales de idiomas
+INSERT INTO Languages (name, slug, display_order) VALUES
+    ('Inglés', 'ingles', 1),
+    ('Español', 'espanol', 2),
+    ('Japonés', 'japones', 3),
+    ('Coreano', 'coreano', 4),
+    ('Francés', 'frances', 5),
+    ('Alemán', 'aleman', 6),
+    ('Italiano', 'italiano', 7),
+    ('Portugués', 'portugues', 8),
+    ('Chino', 'chino', 9),
+    ('Otro', 'otro', 10)
+ON CONFLICT (slug) DO UPDATE 
+SET name = EXCLUDED.name,
+    display_order = EXCLUDED.display_order,
+    updated_at = now();
+
 DROP TABLE IF EXISTS "Users";
 DROP TABLE IF EXISTS "Sales";
 DROP TABLE IF EXISTS "Comments";
 DROP TABLE IF EXISTS "Purchases";
 DROP TABLE IF EXISTS "Favorites";
 DROP TABLE IF EXISTS "Categories";
+DROP TABLE IF EXISTS "Languages";

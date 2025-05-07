@@ -2,20 +2,21 @@ import { DB } from "../config/db.js";
 import format from "pg-format";
 
 export const salesModel = {
-  create: async ({ seller_id, name, description, price, image_url, quantity, category_id }) => {
+  create: async ({ seller_id, name, description, price, image_url, quantity, category_id, language_id }) => {
     try {
       const client = await DB.connect();
       try {
         await client.query('BEGIN');
         const query = format(
-          "INSERT INTO Sales (seller_id, name, description, price, image_url, quantity, category_id) VALUES (%L, %L, %L, %L, %L, %L, %L) RETURNING *",
+          "INSERT INTO Sales (seller_id, name, description, price, image_url, quantity, category_id, language_id) VALUES (%L, %L, %L, %L, %L, %L, %L, %L) RETURNING *",
           seller_id,
           name,
           description,
           price,
           image_url,
           quantity,
-          category_id
+          category_id,
+          language_id
         );
         const { rows } = await client.query(query);
         await client.query('COMMIT');
@@ -86,10 +87,14 @@ export const salesModel = {
           u.name AS seller_name,
           c.id as category_id,
           c.name as category_name,
-          c.slug as category_slug
+          c.slug as category_slug,
+          l.id as language_id,
+          l.name as language_name,
+          l.slug as language_slug
          FROM Sales s
          JOIN Users u ON s.seller_id = u.id
          LEFT JOIN Categories c ON s.category_id = c.id
+         LEFT JOIN Languages l ON s.language_id = l.id
          WHERE s.id = %L`,
         sale_id
       );
@@ -151,10 +156,14 @@ export const salesModel = {
           p.sale_id,
           c.id as category_id,
           c.name as category_name,
-          c.slug as category_slug
+          c.slug as category_slug,
+          l.id as language_id,
+          l.name as language_name,
+          l.slug as language_slug
         FROM Sales s
         LEFT JOIN Purchases p ON s.id = p.sale_id AND p.seller_id = %L
         LEFT JOIN Categories c ON s.category_id = c.id
+        LEFT JOIN Languages l ON s.language_id = l.id
         WHERE s.seller_id = %L 
         ORDER BY s.created_at DESC
       `, seller_id, seller_id);
@@ -178,9 +187,13 @@ export const salesModel = {
             s.*,
             c.id as category_id,
             c.name as category_name,
-            c.slug as category_slug
+            c.slug as category_slug,
+            l.id as language_id,
+            l.name as language_name,
+            l.slug as language_slug
           FROM Sales s
           LEFT JOIN Categories c ON s.category_id = c.id
+          LEFT JOIN Languages l ON s.language_id = l.id
           WHERE s.seller_id = %L 
           AND s.status = 'available'
           AND s.category_id = %L
@@ -207,9 +220,13 @@ export const salesModel = {
             s.*,
             c.id as category_id,
             c.name as category_name,
-            c.slug as category_slug
+            c.slug as category_slug,
+            l.id as language_id,
+            l.name as language_name,
+            l.slug as language_slug
           FROM Sales s
           LEFT JOIN Categories c ON s.category_id = c.id
+          LEFT JOIN Languages l ON s.language_id = l.id
           WHERE s.seller_id = %L 
           AND s.status = 'available'
           ORDER BY s.created_at DESC
@@ -256,19 +273,20 @@ export const salesModel = {
     }
   },
 
-  update: async (sale_id, seller_id, { name, description, price, image_url, quantity, category_id }) => {
+  update: async (sale_id, seller_id, { name, description, price, image_url, quantity, category_id, language_id }) => {
     try {
       const client = await DB.connect();
       try {
         await client.query('BEGIN');
         const query = format(
-          "UPDATE Sales SET name = %L, description = %L, price = %L, image_url = %L, quantity = %L, category_id = %L WHERE id = %L AND seller_id = %L RETURNING *",
+          "UPDATE Sales SET name = %L, description = %L, price = %L, image_url = %L, quantity = %L, category_id = %L, language_id = %L WHERE id = %L AND seller_id = %L RETURNING *",
           name,
           description,
           price,
           image_url,
           quantity,
           category_id,
+          language_id,
           sale_id,
           seller_id
         );
@@ -309,10 +327,19 @@ export const salesModel = {
       if (categories) {
         const ids = Array.isArray(categories) ? categories : categories.split(',');
         query = format(
-          `SELECT s.*, u.name AS seller_name, c.id as category_id, c.name as category_name, c.slug as category_slug
+          `SELECT 
+           s.*, 
+           u.name AS seller_name, 
+           c.id as category_id, 
+           c.name as category_name, 
+           c.slug as category_slug,
+           l.id as language_id,
+           l.name as language_name,
+           l.slug as language_slug
            FROM Sales s
            JOIN Users u ON s.seller_id = u.id
            LEFT JOIN Categories c ON s.category_id = c.id
+           LEFT JOIN Languages l ON s.language_id = l.id
            WHERE s.status = 'available' 
            AND s.category_id IN (%L)
            AND (
@@ -348,10 +375,19 @@ export const salesModel = {
         );
       } else {
         query = format(
-          `SELECT s.*, u.name AS seller_name, c.id as category_id, c.name as category_name, c.slug as category_slug
+          `SELECT 
+           s.*, 
+           u.name AS seller_name, 
+           c.id as category_id, 
+           c.name as category_name, 
+           c.slug as category_slug,
+           l.id as language_id,
+           l.name as language_name,
+           l.slug as language_slug
            FROM Sales s
            JOIN Users u ON s.seller_id = u.id
            LEFT JOIN Categories c ON s.category_id = c.id
+           LEFT JOIN Languages l ON s.language_id = l.id
            WHERE s.status = 'available' 
            AND (
              s.name ILIKE %L OR 

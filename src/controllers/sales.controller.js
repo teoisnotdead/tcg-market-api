@@ -1,20 +1,27 @@
 import { salesModel } from "../models/sales.model.js";
 import { purchasesModel } from "../models/purchases.model.js";
 import { categoriesModel } from "../models/categories.model.js";
+import { languagesModel } from "../models/languages.model.js";
 
 export const createSale = async (req, res, next) => {
   try {
-    const { name, description, price, image_url, quantity, category_id } = req.body;
+    const { name, description, price, image_url, quantity, category_id, language_id } = req.body;
     const seller_id = req.user.id;
 
-    if (!name || !description || !price || !quantity || !category_id) {
-      return res.status(400).json({ message: "Todos los campos son obligatorios, incluida la categoría" });
+    if (!name || !description || !price || !quantity || !category_id || !language_id) {
+      return res.status(400).json({ message: "Todos los campos son obligatorios, incluidas la categoría y el idioma" });
     }
 
     // Validar que la categoría exista
     const category = await categoriesModel.findById(category_id);
     if (!category) {
       return res.status(400).json({ message: "La categoría no existe" });
+    }
+
+    // Validar que el idioma exista
+    const language = await languagesModel.findById(language_id);
+    if (!language) {
+      return res.status(400).json({ message: "El idioma no existe" });
     }
 
     const sale = await salesModel.create({
@@ -24,7 +31,8 @@ export const createSale = async (req, res, next) => {
       price,
       image_url: image_url || "https://placehold.co/200x300",
       quantity,
-      category_id
+      category_id,
+      language_id
     });
 
     res.status(201).json(sale);
@@ -162,7 +170,9 @@ export const checkoutSale = async (req, res, next) => {
       description: sale.description,
       price: sale.price,
       image_url: sale.image_url,
-      quantity
+      quantity,
+      language_id: sale.language_id,
+      category_id: sale.category_id
     });
 
     res.status(201).json({ message: "Compra realizada con éxito", purchase });
@@ -175,7 +185,7 @@ export const updateSale = async (req, res) => {
   console.log('updateSale', req.body);
   try {
     const { id } = req.params;
-    const { name, description, price, image_url, quantity, category_id } = req.body;
+    const { name, description, price, image_url, quantity, category_id, language_id } = req.body;
     const seller_id = req.user.id;
 
     if (!category_id) {
@@ -194,7 +204,8 @@ export const updateSale = async (req, res) => {
       price,
       image_url,
       quantity,
-      category_id
+      category_id,
+      language_id
     });
 
     if (!updatedSale) {

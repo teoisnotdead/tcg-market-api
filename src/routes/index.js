@@ -5,6 +5,7 @@ import saleRoutes from './sales.routes.js';
 import purchaseRoutes from './purchases.routes.js';
 import favoriteRoutes from './favorites.routes.js';
 import categoryRoutes from './categories.routes.js';
+import languageRoutes from './languages.routes.js';
 
 export {
     authRoutes,
@@ -13,5 +14,6 @@ export {
     saleRoutes,
     purchaseRoutes,
     favoriteRoutes,
-    categoryRoutes
+    categoryRoutes,
+    languageRoutes
 }; 

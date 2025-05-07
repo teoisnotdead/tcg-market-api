@@ -2,10 +2,10 @@ import { DB } from "../config/db.js";
 import format from "pg-format";
 
 export const purchasesModel = {
-  create: async ({ user_id, sale_id, seller_id, name, description, price, image_url, quantity }) => {
+  create: async ({ user_id, sale_id, seller_id, name, description, price, image_url, quantity, language_id, category_id }) => {
     try {
       const query = format(
-        "INSERT INTO Purchases (id, user_id, sale_id, seller_id, name, description, price, image_url, quantity) VALUES (gen_random_uuid(), %L, %L, %L, %L, %L, %L, %L, %L) RETURNING *",
+        "INSERT INTO Purchases (id, user_id, sale_id, seller_id, name, description, price, image_url, quantity, language_id, category_id) VALUES (gen_random_uuid(), %L, %L, %L, %L, %L, %L, %L, %L, %L, %L) RETURNING *",
         user_id,
         sale_id,
         seller_id,
@@ -13,7 +13,9 @@ export const purchasesModel = {
         description,
         price,
         image_url,
-        quantity
+        quantity,
+        language_id,
+        category_id
       );
 
       const { rows } = await DB.query(query);
@@ -26,7 +28,17 @@ export const purchasesModel = {
 
   findAllByUser: async (user_id) => {
     try {
-      const query = format("SELECT * FROM Purchases WHERE user_id = %L ORDER BY created_at DESC", user_id);
+      const query = format(`
+        SELECT p.*, 
+               l.name as language_name,
+               c.name as category_name
+        FROM Purchases p
+        LEFT JOIN Languages l ON p.language_id = l.id
+        LEFT JOIN Categories c ON p.category_id = c.id
+        WHERE p.user_id = %L 
+        ORDER BY p.created_at DESC
+      `, user_id);
+      
       const { rows } = await DB.query(query);
       return rows;
     } catch (error) {
