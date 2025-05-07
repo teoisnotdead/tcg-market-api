@@ -66,4 +66,47 @@ export const userModel = {
         }
     },
 
+    updateRefreshToken: async (userId, refreshToken, expiresAt) => {
+        try {
+            const query = format(
+                `UPDATE Users SET refresh_token = %L, refresh_token_expires_at = %L WHERE id = %L RETURNING id`,
+                refreshToken,
+                expiresAt,
+                userId
+            )
+            const { rows } = await DB.query(query)
+            return rows[0]
+        } catch (error) {
+            console.error("Error al actualizar refresh token:", error)
+            throw error
+        }
+    },
+
+    findByRefreshToken: async (refreshToken) => {
+        try {
+            const query = format(
+                `SELECT * FROM Users WHERE refresh_token = %L AND refresh_token_expires_at > NOW()`,
+                refreshToken
+            )
+            const { rows } = await DB.query(query)
+            return rows[0]
+        } catch (error) {
+            console.error("Error al buscar usuario por refresh token:", error)
+            throw error
+        }
+    },
+
+    removeRefreshToken: async (userId) => {
+        try {
+            const query = format(
+                `UPDATE Users SET refresh_token = NULL, refresh_token_expires_at = NULL WHERE id = %L RETURNING id`,
+                userId
+            )
+            const { rows } = await DB.query(query)
+            return rows[0]
+        } catch (error) {
+            console.error("Error al remover refresh token:", error)
+            throw error
+        }
+    }
 }

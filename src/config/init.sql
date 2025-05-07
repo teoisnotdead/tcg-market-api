@@ -1,5 +1,13 @@
 -- Active: 1730747908016@@127.0.0.1@5432@tcg_market
 
+DROP TABLE IF EXISTS "Favorites";
+DROP TABLE IF EXISTS "Purchases";
+DROP TABLE IF EXISTS "Comments";
+DROP TABLE IF EXISTS "Sales";
+DROP TABLE IF EXISTS "Categories";
+DROP TABLE IF EXISTS "Languages";
+DROP TABLE IF EXISTS "Users";
+
 CREATE DATABASE tcg_market;
 
 CREATE TABLE Users (
@@ -8,7 +16,9 @@ CREATE TABLE Users (
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
+    updated_at TIMESTAMP DEFAULT now(),
+    refresh_token TEXT,
+    refresh_token_expires_at TIMESTAMP
 );
 
 CREATE TABLE Categories (
@@ -118,11 +128,3 @@ ON CONFLICT (slug) DO UPDATE
 SET name = EXCLUDED.name,
     display_order = EXCLUDED.display_order,
     updated_at = now();
-
-DROP TABLE IF EXISTS "Users";
-DROP TABLE IF EXISTS "Sales";
-DROP TABLE IF EXISTS "Comments";
-DROP TABLE IF EXISTS "Purchases";
-DROP TABLE IF EXISTS "Favorites";
-DROP TABLE IF EXISTS "Categories";
-DROP TABLE IF EXISTS "Languages";
