@@ -181,7 +181,6 @@ export const checkoutSale = async (req, res, next) => {
 };
 
 export const updateSale = async (req, res) => {
-  console.log('updateSale', req.body);
   try {
     const { id } = req.params;
     const { name, description, price, image_url, quantity, category_id, language_id } = req.body;
